@@ -18,7 +18,7 @@ def enhance_frame(frame: np.ndarray) -> np.ndarray:
     return frame
 
 
-# Additional enhancement options - need to do more research on the optimal combination 
+# Additional enhancement options from Low - we need to do more research on the optimal combination 
 
 def enhance_contrast(frame: np.ndarray, alpha: float = 1.5, beta: int = 20) -> np.ndarray:
     return cv2.convertScaleAbs(frame, alpha=alpha, beta=beta)
