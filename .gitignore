@@ -1,0 +1,6 @@
+venv/
+__pycache__/
+*.pyc
+uploads/
+frames/
+ship_fouling.db
