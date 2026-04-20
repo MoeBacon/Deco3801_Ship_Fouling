@@ -1,6 +1,6 @@
 import os
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, UploadFile, File, BackgroundTasks
 from app.database import get_connection
@@ -92,7 +92,7 @@ async def upload_video(
     cursor.execute(
         """INSERT INTO videos (id, filename, upload_timestamp, status)
         VALUES (?, ?, ?, ?)""",
-        (video_id, file.filename, datetime.utcnow().isoformat(), "queued")
+        (video_id, file.filename, datetime.now(timezone.utc).isoformat(), "queued")
     )
     connection.commit()
     connection.close()
