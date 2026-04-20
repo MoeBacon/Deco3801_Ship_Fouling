@@ -15,7 +15,7 @@ client = InferenceHTTPClient(
     api_key=ROBOFLOW_API_KEY
 )
 
-# Sends an enhanced frame to the Roboflow model and returns detections 
+# Sends an enhanced frame to the Roboflow model and returns detections for that frame
 def run_ml_on_frame(frame: np.ndarray) -> list[dict]:
     temp_path = None
 
