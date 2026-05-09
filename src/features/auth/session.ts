@@ -11,7 +11,7 @@ function isObject(value: unknown): value is Record<string, unknown> {
 
 export function readAuthSession(): AuthSession | null {
   try {
-    const raw = window.sessionStorage.getItem(AUTH_SESSION_KEY)
+    const raw = window.localStorage.getItem(AUTH_SESSION_KEY)
     if (!raw) return null
     const parsed = JSON.parse(raw) as unknown
     if (!isObject(parsed)) return null
@@ -28,9 +28,9 @@ export function writeAuthSession(username: string): void {
     username,
     loggedInAt: new Date().toISOString(),
   }
-  window.sessionStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(session))
+  window.localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(session))
 }
 
 export function clearAuthSession(): void {
-  window.sessionStorage.removeItem(AUTH_SESSION_KEY)
+  window.localStorage.removeItem(AUTH_SESSION_KEY)
 }

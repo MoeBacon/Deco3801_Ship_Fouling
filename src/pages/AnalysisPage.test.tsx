@@ -53,6 +53,6 @@ describe('AnalysisPage', () => {
       expect(mockLoadAnalysisByVideoId).toHaveBeenCalledWith('video-1', expect.any(AbortSignal))
     })
 
-    expect(screen.getByText(/#1/i)).toBeInTheDocument()
+    expect(screen.getByText(/#1 · 0:05/i)).toBeInTheDocument()
   })
 })
