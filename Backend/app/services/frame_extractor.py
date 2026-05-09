@@ -46,7 +46,12 @@ def extract_frames(video_path: str, video_id: str) -> dict:
             file_path = os.path.join(output_dir, frame_filename)
             cv2.imwrite(file_path, cv2.cvtColor(enhanced, cv2.COLOR_RGB2BGR))
 
-            ml_detections = run_ml_on_frame(enhanced)
+            ml_detections = []
+            try:
+                ml_detections = run_ml_on_frame(enhanced)
+            except Exception as e:
+                print(f"ML inference failed on frame {saved_count}: {e}")
+                # Continue processing other frames without detections
 
             if videos_frames_per_second > 0:
                 frame_timestamp = frame_index / videos_frames_per_second
