@@ -1,0 +1,114 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+
+  --color-surface-0: #0b1220;
+  --color-surface-1: #111927;
+  --color-surface-2: #1a2332;
+  --color-accent: #2b6fe6;
+  --color-accent-hover: #1d5fdb;
+  --color-muted: #94a3b8;
+  --color-border: #243044;
+
+  --color-status-low: #22c55e;
+  --color-status-mod: #f59e0b;
+  --color-status-sev: #ef4444;
+}
+
+html {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  min-height: 100svh;
+  font-family: var(--font-sans);
+  background-color: var(--color-surface-0);
+  color: #f8fafc;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  height: 100svh;
+  min-height: 100dvh;
+  min-height: 100svh;
+  width: 100%;
+  overflow: hidden;
+}
+
+.frame-strip-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #334155 #0f172a;
+}
+
+.frame-strip-scroll::-webkit-scrollbar {
+  height: 10px;
+}
+
+.frame-strip-scroll::-webkit-scrollbar-track {
+  background: #0f172a;
+  border-radius: 9999px;
+}
+
+.frame-strip-scroll::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 9999px;
+  border: 2px solid #0f172a;
+}
+
+.frame-strip-scroll::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* ── Print styles ────────────────────────────────────────────────────────── */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 1.5cm;
+  }
+
+  /* Hide app shell */
+  #app-sidebar,
+  #app-mobile-header,
+  .no-print {
+    display: none !important;
+  }
+
+  /* Reset backgrounds so the report prints on white */
+  body,
+  #root,
+  main {
+    background: white !important;
+    color: black !important;
+    overflow: visible !important;
+    height: auto !important;
+    min-height: unset !important;
+  }
+
+  /* Make the main content area fill the page width */
+  #app-main-content {
+    width: 100% !important;
+    overflow: visible !important;
+    height: auto !important;
+  }
+
+  /* Report document fills the A4 page */
+  #report-document {
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  /* Avoid page breaks inside individual sections */
+  #report-document > div {
+    page-break-inside: avoid;
+  }
+}
