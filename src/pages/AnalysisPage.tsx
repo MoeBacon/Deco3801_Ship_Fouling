@@ -454,11 +454,11 @@ export default function AnalysisPage() {
           <div className="mt-4 grid gap-4 lg:grid-cols-2">
             <div className="relative min-h-[16rem] overflow-hidden rounded-lg border border-border bg-surface-0">
               <div className="absolute left-3 top-3 rounded bg-black/50 px-2 py-1 text-xs text-white">
-                Selected frame
+                {selectedFrame?.annotated_image_url ? 'Annotated frame' : 'Selected frame'}
               </div>
               {selectedFrame ? (
                 <img
-                  src={selectedFrame.image_url}
+                  src={selectedFrame.annotated_image_url ?? selectedFrame.image_url}
                   alt={`Frame ${selectedFrame.frame_number}`}
                   loading="lazy"
                   decoding="async"
