@@ -33,7 +33,7 @@ def get_frames(video_id: str):
 
     rows = cursor.execute(
         """SELECT id, video_id, frame_number, timestamp_in_video,
-        file_path, enhancement_applied
+        file_path, annotated_file_path, enhancement_applied
         FROM frames WHERE video_id = ?
         ORDER BY frame_number ASC""",
         (video_id,),
@@ -45,6 +45,10 @@ def get_frames(video_id: str):
     for row in rows:
         image_url = to_static_url(row["file_path"])
 
+        annotated_image_url = None
+        if row["annotated_file_path"]:
+            annotated_image_url = to_static_url(row["annotated_file_path"])
+
         frames.append(
             FrameResponse(
                 frame_id=row["id"],
@@ -52,6 +56,7 @@ def get_frames(video_id: str):
                 frame_number=row["frame_number"],
                 timestamp_in_video=row["timestamp_in_video"],
                 image_url=image_url,
+                annotated_image_url=annotated_image_url,
                 enhancement_applied=row["enhancement_applied"],
             )
         )
@@ -71,7 +76,7 @@ def get_detections(frame_id: str):
         raise HTTPException(status_code=404, detail=f"No frame found with the id {frame_id}")
 
     rows = cursor.execute(
-        "SELECT id, frame_id, class_label, confidence FROM detections WHERE frame_id = ?",
+        "SELECT id, frame_id, class_label, confidence, x, y, width, height FROM detections WHERE frame_id = ?",
         (frame_id,),
     ).fetchall()
 
@@ -83,6 +88,10 @@ def get_detections(frame_id: str):
             frame_id=row["frame_id"],
             class_label=row["class_label"],
             confidence=row["confidence"],
+            x=row["x"],
+            y=row["y"],
+            width=row["width"],
+            height=row["height"],
         )
         for row in rows
     ]

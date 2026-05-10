@@ -11,9 +11,8 @@ class VideoUploadResponse(BaseModel):
 class JobStatusResponse(BaseModel):
     video_id: str
     status: str
-    frame_count: Optional[int]
-    duration: Optional[float]
-
+    frame_count: Optional[int] = None
+    duration: Optional[float] = None
 
 class FrameResponse(BaseModel):
     frame_id: str
@@ -21,6 +20,7 @@ class FrameResponse(BaseModel):
     frame_number: int
     timestamp_in_video: float
     image_url: str
+    annotated_image_url: Optional[str] = None
     enhancement_applied: Optional[str]
 
 
@@ -29,3 +29,7 @@ class DetectionResponse(BaseModel):
     frame_id: str
     class_label: str
     confidence: float
+    x: float
+    y: float
+    width: float
+    height: float

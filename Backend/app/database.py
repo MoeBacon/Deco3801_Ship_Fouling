@@ -38,6 +38,7 @@ def init_database():
             frame_number INTEGER NOT NULL,
             timestamp_in_video REAL NOT NULL,
             file_path TEXT NOT NULL,
+            annotated_file_path TEXT,
             enhancement_applied TEXT,
             FOREIGN KEY (video_id) REFERENCES videos(id)
         )
@@ -51,10 +52,28 @@ def init_database():
             frame_id TEXT NOT NULL,
             class_label TEXT NOT NULL,
             confidence REAL NOT NULL,
+            x REAL,
+            y REAL,
+            width REAL,
+            height REAL,
             FOREIGN KEY (frame_id) REFERENCES frames(id)
         )
     """
     )
+
+    # Migrate existing databases that predate these columns
+    for migration in [
+        "ALTER TABLE frames ADD COLUMN annotated_file_path TEXT",
+        "ALTER TABLE detections ADD COLUMN x REAL",
+        "ALTER TABLE detections ADD COLUMN y REAL",
+        "ALTER TABLE detections ADD COLUMN width REAL",
+        "ALTER TABLE detections ADD COLUMN height REAL",
+    ]:
+        try:
+            cursor.execute(migration)
+            connection.commit()
+        except sqlite3.OperationalError:
+            pass  # Column already exists
 
     connection.commit()
     connection.close()

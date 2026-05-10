@@ -24,14 +24,15 @@ def process_video(video_id: str, video_path: str):
         for frame in results["frames"]:
             cursor.execute(
                 """INSERT INTO frames
-                (id, video_id, frame_number, timestamp_in_video, file_path, enhancement_applied)
-                VALUES (?, ?, ?, ?, ?, ?)""",
+                (id, video_id, frame_number, timestamp_in_video, file_path, annotated_file_path, enhancement_applied)
+                VALUES (?, ?, ?, ?, ?, ?, ?)""",
                 (
                     frame["frame_id"],
                     video_id,
                     frame["frame_number"],
                     frame["timestamp_in_video"],
                     frame["file_path"],
+                    frame.get("annotated_file_path"),
                     frame["enhancement_applied"],
                 ),
             )
@@ -39,13 +40,17 @@ def process_video(video_id: str, video_path: str):
             for detection in frame["detections"]:
                 cursor.execute(
                     """INSERT INTO detections
-                    (id, frame_id, class_label, confidence)
-                    VALUES (?, ?, ?, ?)""",
+                    (id, frame_id, class_label, confidence, x, y, width, height)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
                     (
                         str(uuid.uuid4()),
                         frame["frame_id"],
                         detection["class_label"],
                         detection["confidence"],
+                        detection.get("x", 0.0),
+                        detection.get("y", 0.0),
+                        detection.get("width", 0.0),
+                        detection.get("height", 0.0),
                     ),
                 )
 

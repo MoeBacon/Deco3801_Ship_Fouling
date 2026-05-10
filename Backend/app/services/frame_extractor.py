@@ -47,11 +47,21 @@ def extract_frames(video_path: str, video_id: str) -> dict:
             cv2.imwrite(file_path, cv2.cvtColor(enhanced, cv2.COLOR_RGB2BGR))
 
             ml_detections = []
+            annotated_image_array = None
             try:
-                ml_detections = run_ml_on_frame(enhanced)
+                result = run_ml_on_frame(enhanced)
+                ml_detections = result.get("detections", [])
+                annotated_image_array = result.get("annotated_image")
             except Exception as e:
                 print(f"ML inference failed on frame {saved_count}: {e}")
                 # Continue processing other frames without detections
+
+            # here im attempting to save the annotated image that came from ML
+            annotated_file_path = None
+            if annotated_image_array is not None:
+                annotated_filename = f"frame_{saved_count:04d}_annotated.jpg"
+                annotated_file_path = os.path.join(output_dir, annotated_filename)
+                cv2.imwrite(annotated_file_path, annotated_image_array)
 
             if videos_frames_per_second > 0:
                 frame_timestamp = frame_index / videos_frames_per_second
@@ -64,6 +74,7 @@ def extract_frames(video_path: str, video_id: str) -> dict:
                     "frame_number": saved_count,
                     "timestamp_in_video": frame_timestamp,
                     "file_path": file_path,
+                    "annotated_file_path": annotated_file_path,
                     "enhancement_applied": "Gray-world White Balance and CLAHE",
                     "detections": ml_detections,
                 }
