@@ -12,7 +12,7 @@ from app.services.preprocessing import (
 )
 
 # Extract every Nth frame to avoid processing too many frames from long videos.
-FRAME_SAMPLE_RATE = 120
+FRAME_SAMPLE_RATE = 240
 
 # Quality filter thresholds — tune these to control how strict filtering is.
 BLUR_THRESHOLD = 25.0    # raise to reject more blurry frames
