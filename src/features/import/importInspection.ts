@@ -1,6 +1,7 @@
 import { getJobStatus, getVideoFrames, uploadVideo } from './api'
 import type {
   ImportInspectionResponse,
+  JobStatus,
   JobStatusResponse,
   VesselFormPayload,
 } from './types'
@@ -9,6 +10,12 @@ type PollOptions = {
   intervalMs?: number
   timeoutMs?: number
   signal?: AbortSignal
+}
+
+type ImportInspectionOptions = {
+  signal?: AbortSignal
+  onStatus?: (status: JobStatusResponse) => void
+  onStage?: (status: JobStatus) => void
 }
 
 function sleep(ms: number): Promise<void> {
@@ -47,8 +54,10 @@ async function pollJobUntilDone(
 export async function importInspection(
   file: File,
   vessel: VesselFormPayload,
-  signal?: AbortSignal,
+  options: ImportInspectionOptions = {},
 ): Promise<ImportInspectionResponse> {
+  const { signal, onStatus, onStage } = options
+  onStage?.('queued')
   const upload = await uploadVideo(file, signal)
   let latestStatus: JobStatusResponse = {
     video_id: upload.video_id,
@@ -56,6 +65,8 @@ export async function importInspection(
     frame_count: null,
     duration: null,
   }
+  onStatus?.(latestStatus)
+  onStage?.(upload.status)
 
   if (upload.status === 'unknown') {
     throw new Error('Backend returned an unknown upload status.')
@@ -65,6 +76,8 @@ export async function importInspection(
     upload.video_id,
     (status) => {
       latestStatus = status
+      onStatus?.(status)
+      onStage?.(status.status)
     },
     signal ? { signal } : {},
   )

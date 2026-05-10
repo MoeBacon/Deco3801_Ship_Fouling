@@ -13,6 +13,10 @@ vi.mock('../features/analysis/api', () => ({
   getFrameDetections: mockGetFrameDetections,
 }))
 
+vi.mock('../lib/reportStorage', () => ({
+  saveReport: vi.fn(),
+}))
+
 describe('AnalysisPage', () => {
   it('shows guidance when no route state and no video id', async () => {
     render(
@@ -53,6 +57,6 @@ describe('AnalysisPage', () => {
       expect(mockLoadAnalysisByVideoId).toHaveBeenCalledWith('video-1', expect.any(AbortSignal))
     })
 
-    expect(screen.getByText(/#1/i)).toBeInTheDocument()
+    expect(screen.getByText(/#1 · 0:05/i)).toBeInTheDocument()
   })
 })

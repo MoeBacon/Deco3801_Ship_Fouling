@@ -20,7 +20,6 @@ export default function MainLayout() {
       ) : null}
 
       <div
-        id="app-sidebar"
         className={`fixed inset-y-0 left-0 z-50 w-[min(18rem,100%)] max-w-full transform transition-transform duration-200 ease-out md:static md:z-0 md:flex md:h-full md:shrink-0 md:translate-x-0 ${
           mobileNavOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         }`}
@@ -28,8 +27,8 @@ export default function MainLayout() {
         <Sidebar onNavigate={closeMobileNav} />
       </div>
 
-      <div id="app-main-content" className="flex min-h-0 min-w-0 flex-1 flex-col md:h-full md:min-h-0">
-        <div id="app-mobile-header" className="flex shrink-0 items-center justify-between gap-3 border-b border-border bg-surface-0 px-3 py-2.5 sm:px-4 md:hidden">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col md:h-full md:min-h-0">
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border bg-surface-0 px-3 py-2.5 sm:px-4 md:hidden">
           <BrandMark variant="dark" compact className="min-w-0 flex-1" />
           <button
             type="button"
@@ -43,7 +42,7 @@ export default function MainLayout() {
         </div>
 
         <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overscroll-contain bg-surface-0">
-          <div className="flex min-h-full w-full min-w-0 flex-col px-3 py-4 sm:px-4 sm:py-5 lg:px-6 lg:py-6 xl:px-8">
+          <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col px-3 py-4 sm:px-4 sm:py-5 lg:px-6 lg:py-6 xl:px-8">
             <Outlet />
           </div>
         </main>
