@@ -45,6 +45,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
+/** Hook is intentionally exported alongside Provider for this module. */
+// eslint-disable-next-line react-refresh/only-export-components -- useAuth is the public API for AuthProvider
 export function useAuth(): AuthContextValue {
   const context = useContext(AuthContext)
   if (!context) throw new Error('useAuth must be used within AuthProvider')

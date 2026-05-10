@@ -1,14 +1,14 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import FootageDropZone, { FOOTAGE_MAX_BYTES } from '../components/FootageDropZone'
 import ImportStatusCard from '../components/ImportStatusCard'
 import PageHeader from '../components/PageHeader'
 import VesselDetailsForm from '../components/VesselDetailsForm'
-import { importInspection } from '../features/import/importInspection'
-import type { ImportInspectionResponse, VesselFormPayload } from '../features/import/types'
-import { normalizeApiError } from '../lib/apiError'
+import { useImportWorkflow } from '../features/import/useImportWorkflow'
+import type { VesselFormPayload } from '../features/import/types'
 import { formatBytes } from '../lib/formatBytes'
 import { ROUTES } from '../lib/routes'
+import { readUploadDraft, writeUploadDraft } from '../lib/uploadDraft'
 
 const emptyVessel: VesselFormPayload = {
   vessel_name: '',
@@ -18,45 +18,41 @@ const emptyVessel: VesselFormPayload = {
   notes: '',
 }
 
-const uploadDraftStorageKey = 'upload-page-draft-v1'
+const REQUIRED_VESSEL_FIELDS: Array<keyof VesselFormPayload> = [
+  'vessel_name',
+  'inspection_date',
+  'operator_name',
+  'location',
+]
 
-type UploadDraft = {
-  vessel: VesselFormPayload
-  result: ImportInspectionResponse | null
+function normalizeText(value: string): string {
+  return value.trim().toLowerCase()
 }
 
 export default function UploadPage() {
+  const [initialDraft] = useState(() => readUploadDraft())
   const navigate = useNavigate()
-  const mountedRef = useRef(true)
-  const activeControllerRef = useRef<AbortController | null>(null)
-  const [vessel, setVessel] = useState<VesselFormPayload>(emptyVessel)
+  const [vessel, setVessel] = useState<VesselFormPayload>(() => ({ ...emptyVessel, ...(initialDraft?.vessel ?? {}) }))
   const [file, setFile] = useState<File | null>(null)
   const [footageError, setFootageError] = useState<string | null>(null)
-  const [importError, setImportError] = useState<string | null>(null)
-  const [uploading, setUploading] = useState(false)
-  const [result, setResult] = useState<ImportInspectionResponse | null>(null)
+  const [vesselErrors, setVesselErrors] = useState<Partial<Record<keyof VesselFormPayload, string>>>({})
+  const [lastImportedVessel, setLastImportedVessel] = useState<VesselFormPayload | null>(
+    () => initialDraft?.result?.vessel ?? null,
+  )
+  const {
+    uploading,
+    result,
+    setResult,
+    importError,
+    setImportError,
+    liveJob,
+    liveStage,
+    processingDelayElapsed,
+    runImport: executeImport,
+  } = useImportWorkflow(vessel)
 
   useEffect(() => {
-    mountedRef.current = true
-    try {
-      const raw = window.sessionStorage.getItem(uploadDraftStorageKey)
-      if (raw) {
-        const parsed = JSON.parse(raw) as UploadDraft
-        if (parsed?.vessel) setVessel(parsed.vessel)
-        if (parsed?.result) setResult(parsed.result)
-      }
-    } catch {
-      // Ignore malformed session data and start with defaults.
-    }
-    return () => {
-      mountedRef.current = false
-      activeControllerRef.current?.abort()
-    }
-  }, [])
-
-  useEffect(() => {
-    const draft: UploadDraft = { vessel, result }
-    window.sessionStorage.setItem(uploadDraftStorageKey, JSON.stringify(draft))
+    writeUploadDraft({ vessel, result })
   }, [vessel, result])
 
   const onPickFile = (f: File | null) => {
@@ -68,6 +64,21 @@ export default function UploadPage() {
       setFile(null)
       return
     }
+
+    if (f && lastImportedVessel) {
+      const sameMetadata = REQUIRED_VESSEL_FIELDS.every(
+        (field) => normalizeText(vessel[field]) === normalizeText(lastImportedVessel[field]),
+      )
+      if (sameMetadata) {
+        const shouldContinue = window.confirm(
+          'This vessel name/date/operator/location matches your last upload. Consider updating metadata to avoid duplicates. Continue anyway?',
+        )
+        if (!shouldContinue) {
+          setFile(null)
+          return
+        }
+      }
+    }
     setFile(f)
   }
 
@@ -76,29 +87,20 @@ export default function UploadPage() {
       setImportError('Select a video or image file first.')
       return
     }
-    activeControllerRef.current?.abort()
-    const controller = new AbortController()
-    activeControllerRef.current = controller
-    if (mountedRef.current) {
-      setImportError(null)
-      setUploading(true)
-      setResult(null)
+    const nextErrors: Partial<Record<keyof VesselFormPayload, string>> = {}
+    for (const field of REQUIRED_VESSEL_FIELDS) {
+      if (!vessel[field].trim()) {
+        nextErrors[field] = 'This field is required.'
+      }
     }
-    try {
-      const data = await importInspection(file, vessel, controller.signal)
-      if (!mountedRef.current || controller.signal.aborted) return
-      setResult(data)
-      if (!data.ok) {
-        setImportError('Video processing failed on the backend. Check FastAPI logs for details.')
-      }
-    } catch (e) {
-      if (!mountedRef.current || controller.signal.aborted) return
-      setImportError(normalizeApiError(e))
-    } finally {
-      if (mountedRef.current && activeControllerRef.current === controller) {
-        setUploading(false)
-        activeControllerRef.current = null
-      }
+    setVesselErrors(nextErrors)
+    if (Object.keys(nextErrors).length > 0) {
+      setImportError('Fill in all required vessel details before uploading.')
+      return
+    }
+    const data = await executeImport(file, vessel)
+    if (data) {
+      setLastImportedVessel(data.vessel)
     }
   }
 
@@ -114,7 +116,21 @@ export default function UploadPage() {
       <PageHeader breadcrumbs={['Inspections', 'New Import']} title="Upload & Import Inspection" />
 
       <div className="flex min-w-0 flex-1 flex-col gap-6">
-        <VesselDetailsForm value={vessel} onChange={setVessel} disabled={busy} />
+        <VesselDetailsForm
+          value={vessel}
+          onChange={(next) => {
+            setVessel(next)
+            if (Object.keys(vesselErrors).length > 0) {
+              const cleaned: Partial<Record<keyof VesselFormPayload, string>> = {}
+              for (const key of REQUIRED_VESSEL_FIELDS) {
+                if (!next[key].trim()) cleaned[key] = 'This field is required.'
+              }
+              setVesselErrors(cleaned)
+            }
+          }}
+          disabled={busy}
+          requiredErrors={vesselErrors}
+        />
 
         <FootageDropZone file={file} onFile={onPickFile} disabled={busy} error={footageError} />
 
@@ -124,7 +140,14 @@ export default function UploadPage() {
           </div>
         ) : null}
 
-        <ImportStatusCard uploading={uploading} result={result} clientFile={file} />
+        <ImportStatusCard
+          uploading={uploading}
+          result={result}
+          clientFile={file}
+          liveJob={liveJob}
+          liveStage={liveStage}
+          processingDelayElapsed={processingDelayElapsed}
+        />
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <button

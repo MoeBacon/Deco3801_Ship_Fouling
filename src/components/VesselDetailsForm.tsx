@@ -4,6 +4,7 @@ type VesselDetailsFormProps = {
   value: VesselFormPayload
   onChange: (next: VesselFormPayload) => void
   disabled?: boolean
+  requiredErrors?: Partial<Record<keyof VesselFormPayload, string>>
 }
 
 const fields: { key: keyof VesselFormPayload; label: string; type: string; placeholder?: string }[] = [
@@ -13,7 +14,7 @@ const fields: { key: keyof VesselFormPayload; label: string; type: string; place
   { key: 'location', label: 'Location / port', type: 'text', placeholder: 'Port of Brisbane' },
 ]
 
-export default function VesselDetailsForm({ value, onChange, disabled }: VesselDetailsFormProps) {
+export default function VesselDetailsForm({ value, onChange, disabled, requiredErrors }: VesselDetailsFormProps) {
   const set = (key: keyof VesselFormPayload, v: string) => onChange({ ...value, [key]: v })
 
   return (
@@ -25,7 +26,7 @@ export default function VesselDetailsForm({ value, onChange, disabled }: VesselD
         {fields.map(({ key, label, type, placeholder }) => (
           <div key={key} className="space-y-2">
             <label className="text-xs font-medium uppercase tracking-wide text-muted" htmlFor={key}>
-              {label}
+              {label} <span className="text-status-sev">*</span>
             </label>
             <input
               id={key}
@@ -35,8 +36,15 @@ export default function VesselDetailsForm({ value, onChange, disabled }: VesselD
               placeholder={placeholder}
               value={value[key]}
               onChange={(e) => set(key, e.target.value)}
+              onFocus={(e) => {
+                if (type === 'date' && 'showPicker' in e.currentTarget) {
+                  ;(e.currentTarget as HTMLInputElement & { showPicker?: () => void }).showPicker?.()
+                }
+              }}
+              aria-invalid={requiredErrors?.[key] ? 'true' : 'false'}
               className="w-full rounded-lg border border-border bg-surface-0 px-3 py-2.5 text-sm text-white outline-none ring-accent/30 placeholder:text-slate-500 focus:border-accent focus:ring-2 disabled:opacity-60"
             />
+            {requiredErrors?.[key] ? <p className="text-xs text-status-sev">{requiredErrors[key]}</p> : null}
           </div>
         ))}
       </div>

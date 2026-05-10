@@ -13,6 +13,8 @@ type FootageDropZoneProps = {
 
 export default function FootageDropZone({ file, onFile, disabled, error }: FootageDropZoneProps) {
   const inputId = useId()
+  const helpId = useId()
+  const errorId = useId()
   const inputRef = useRef<HTMLInputElement>(null)
   const [dragOver, setDragOver] = useState(false)
 
@@ -42,18 +44,14 @@ export default function FootageDropZone({ file, onFile, disabled, error }: Foota
         accept={ACCEPT}
         className="sr-only"
         disabled={disabled}
+        aria-describedby={error ? `${helpId} ${errorId}` : helpId}
         onChange={onInputChange}
       />
 
-      <div
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault()
-            if (!disabled) inputRef.current?.click()
-          }
-        }}
+      <button
+        type="button"
+        disabled={disabled}
+        aria-describedby={error ? `${helpId} ${errorId}` : helpId}
         onDragEnter={(e) => {
           e.preventDefault()
           if (!disabled) setDragOver(true)
@@ -67,7 +65,7 @@ export default function FootageDropZone({ file, onFile, disabled, error }: Foota
         onClick={() => !disabled && inputRef.current?.click()}
         className={`mt-6 flex cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed px-6 py-14 text-center transition-colors ${
           dragOver ? 'border-accent bg-accent/10' : 'border-border bg-surface-0/50'
-        } ${disabled ? 'pointer-events-none opacity-60' : ''}`}
+        } ${disabled ? 'opacity-60' : ''}`}
       >
         <div className="mb-3 flex size-12 items-center justify-center rounded-full bg-accent/15 text-accent">
           <svg className="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
@@ -82,7 +80,11 @@ export default function FootageDropZone({ file, onFile, disabled, error }: Foota
         <span className="mt-4 inline-flex rounded-lg border border-border bg-surface-2 px-4 py-2 text-sm font-medium text-white hover:bg-surface-1">
           Select file
         </span>
-      </div>
+      </button>
+
+      <p id={helpId} className="sr-only" aria-live="polite">
+        {dragOver ? 'Drop file now to upload.' : 'Choose a file or drag and drop footage into the upload area.'}
+      </p>
 
       {file ? (
         <div className="mt-4 rounded-lg border border-border bg-surface-0/60 px-4 py-3 text-sm text-slate-200">
@@ -102,7 +104,11 @@ export default function FootageDropZone({ file, onFile, disabled, error }: Foota
         </div>
       ) : null}
 
-      {error ? <p className="mt-2 text-sm text-status-sev">{error}</p> : null}
+      {error ? (
+        <p id={errorId} className="mt-2 text-sm text-status-sev" role="alert">
+          {error}
+        </p>
+      ) : null}
     </section>
   )
 }

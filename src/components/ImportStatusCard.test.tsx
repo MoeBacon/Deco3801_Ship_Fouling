@@ -38,10 +38,36 @@ const result: ImportInspectionResponse = {
 
 describe('ImportStatusCard', () => {
   it('renders completed status details and first frame metadata', () => {
-    render(<ImportStatusCard uploading={false} result={result} clientFile={null} />)
+    render(
+      <ImportStatusCard
+        uploading={false}
+        result={result}
+        clientFile={null}
+        liveJob={null}
+        liveStage={null}
+        processingDelayElapsed
+      />,
+    )
 
     expect(screen.getByText(/server job/i)).toBeInTheDocument()
     expect(screen.getByText(/video-123/i)).toBeInTheDocument()
     expect(screen.getByText(/frame #1 at 0:12/i)).toBeInTheDocument()
+  })
+
+  it('shows live processing status before final result', () => {
+    render(
+      <ImportStatusCard
+        uploading
+        result={null}
+        clientFile={new File(['x'], 'sample.mp4', { type: 'video/mp4' })}
+        liveJob={{ video_id: 'live-video', status: 'processing', frame_count: null, duration: null }}
+        liveStage="processing"
+        processingDelayElapsed={false}
+      />,
+    )
+
+    expect(screen.getByText(/server job/i)).toBeInTheDocument()
+    expect(screen.getAllByText(/processing/i).length).toBeGreaterThan(0)
+    expect(screen.getByText(/live-video/i)).toBeInTheDocument()
   })
 })
