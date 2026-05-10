@@ -18,12 +18,15 @@
 
 html {
   height: 100%;
+  overflow: hidden;
 }
 
 body {
   margin: 0;
+  height: 100%;
   min-height: 100dvh;
   min-height: 100svh;
+  overflow: hidden;
   font-family: var(--font-sans);
   background-color: var(--color-surface-0);
   color: #f8fafc;
@@ -64,51 +67,4 @@ body {
 
 .frame-strip-scroll::-webkit-scrollbar-thumb:hover {
   background: #475569;
-}
-
-/* ── Print styles ────────────────────────────────────────────────────────── */
-@media print {
-  @page {
-    size: A4 portrait;
-    margin: 1.5cm;
-  }
-
-  /* Hide app shell */
-  #app-sidebar,
-  #app-mobile-header,
-  .no-print {
-    display: none !important;
-  }
-
-  /* Reset backgrounds so the report prints on white */
-  body,
-  #root,
-  main {
-    background: white !important;
-    color: black !important;
-    overflow: visible !important;
-    height: auto !important;
-    min-height: unset !important;
-  }
-
-  /* Make the main content area fill the page width */
-  #app-main-content {
-    width: 100% !important;
-    overflow: visible !important;
-    height: auto !important;
-  }
-
-  /* Report document fills the A4 page */
-  #report-document {
-    box-shadow: none !important;
-    border: none !important;
-    border-radius: 0 !important;
-    max-width: 100% !important;
-    width: 100% !important;
-  }
-
-  /* Avoid page breaks inside individual sections */
-  #report-document > div {
-    page-break-inside: avoid;
-  }
 }

@@ -1,18 +1,68 @@
 import { formatBytes } from '../lib/formatBytes'
 import { formatTimestamp } from '../lib/time'
-import type { ImportInspectionResponse } from '../features/import/types'
+import type { ImportInspectionResponse, JobStatus, JobStatusResponse } from '../features/import/types'
 
 type ImportStatusCardProps = {
   uploading: boolean
   result: ImportInspectionResponse | null
   clientFile: File | null
+  liveJob: JobStatusResponse | null
+  liveStage: JobStatus | null
+  processingDelayElapsed: boolean
 }
 
-export default function ImportStatusCard({ uploading, result, clientFile }: ImportStatusCardProps) {
+function stageClass(state: 'done' | 'active' | 'pending' | 'error') {
+  if (state === 'done') return 'text-status-low'
+  if (state === 'active') return 'text-accent'
+  if (state === 'error') return 'text-status-sev'
+  return 'text-muted'
+}
+
+function stageBubble(state: 'done' | 'active' | 'pending' | 'error') {
+  if (state === 'done') return 'flex size-6 items-center justify-center rounded-full bg-status-low/20 text-status-low'
+  if (state === 'active') return 'flex size-6 items-center justify-center rounded-full border-2 border-accent bg-accent/10'
+  if (state === 'error') return 'flex size-6 items-center justify-center rounded-full bg-status-sev/20 text-status-sev'
+  return 'flex size-6 items-center justify-center rounded-full border border-border'
+}
+
+export default function ImportStatusCard({
+  uploading,
+  result,
+  clientFile,
+  liveJob,
+  liveStage,
+  processingDelayElapsed,
+}: ImportStatusCardProps) {
   const firstFrame = result?.frames?.[0]
-  const jobStatus = result?.job.status
-  const frameCount = result?.job.frame_count ?? result?.frames.length ?? null
-  const duration = result?.job.duration
+  const latestJob = result?.job ?? liveJob ?? null
+  const jobStatus = latestJob?.status ?? liveStage
+  const frameCount = latestJob?.frame_count ?? result?.frames.length ?? null
+  const duration = latestJob?.duration ?? null
+  const videoId = result?.video_id ?? latestJob?.video_id ?? null
+  const isRunningServerJob = jobStatus === 'processing' || jobStatus === 'queued'
+
+  const uploadState: 'done' | 'active' | 'pending' | 'error' =
+    jobStatus === 'error' ? 'error' : jobStatus ? 'done' : uploading ? 'active' : 'pending'
+  const processingState: 'done' | 'active' | 'pending' | 'error' =
+    jobStatus === 'error'
+      ? 'error'
+      : jobStatus === 'done'
+        ? 'done'
+        : isRunningServerJob && processingDelayElapsed
+          ? 'active'
+          : 'pending'
+  const enhancingState: 'done' | 'active' | 'pending' | 'error' =
+    jobStatus === 'error'
+      ? 'error'
+      : jobStatus === 'done'
+        ? 'done'
+        : isRunningServerJob
+          ? processingDelayElapsed
+            ? 'done'
+            : 'active'
+          : 'pending'
+  const framesState: 'done' | 'active' | 'pending' | 'error' =
+    jobStatus === 'error' ? 'error' : jobStatus === 'done' ? 'done' : 'pending'
 
   return (
     <section className="rounded-xl border border-border bg-surface-1 p-6">
@@ -35,54 +85,57 @@ export default function ImportStatusCard({ uploading, result, clientFile }: Impo
           </div>
         ) : null}
 
-        {uploading ? (
-          <div>
-            <div className="flex items-center justify-between text-xs font-medium text-muted">
-              <span>Uploading &amp; starting job…</span>
-              <span className="text-status-low">In progress</span>
-            </div>
-            <div className="mt-2 h-2 overflow-hidden rounded-full bg-surface-0">
-              <div className="h-full w-full animate-pulse rounded-full bg-status-low/80" />
-            </div>
-          </div>
-        ) : null}
-
-        {!uploading && result ? (
+        {(uploading || result || liveJob || liveStage) ? (
           <div>
             <div className="flex items-center justify-between text-xs font-medium text-muted">
               <span>Server job</span>
-              <span className={result.ok ? 'text-status-low' : 'text-status-sev'}>
-                {jobStatus ?? 'unknown'}
+              <span className={jobStatus === 'error' ? 'text-status-sev' : jobStatus === 'done' ? 'text-status-low' : 'text-accent'}>
+                {jobStatus ?? 'uploading'}
               </span>
             </div>
             <ol className="mt-4 flex flex-wrap items-center gap-4 text-xs text-muted">
-              <li className="flex items-center gap-2 text-status-low">
-                <span className="flex size-6 items-center justify-center rounded-full bg-status-low/20 text-status-low">
-                  ✓
+              <li className={`flex items-center gap-2 ${stageClass(uploadState)}`}>
+                <span className={stageBubble(uploadState)}>
+                  {uploadState === 'done' ? '✓' : uploadState === 'error' ? '!' : uploadState === 'active' ? '●' : '○'}
                 </span>
                 Uploading
               </li>
               <li className="hidden text-border sm:block">→</li>
-              <li className={`flex items-center gap-2 ${result.ok ? 'text-status-low' : 'text-accent'}`}>
-                <span className={`flex size-6 items-center justify-center rounded-full ${result.ok ? 'bg-status-low/20 text-status-low' : 'border-2 border-accent bg-accent/10'}`}>
-                  {result.ok ? '✓' : '●'}
+              <li className={`flex items-center gap-2 ${stageClass(enhancingState)}`}>
+                <span className={stageBubble(enhancingState)}>
+                  {enhancingState === 'done' ? '✓' : enhancingState === 'error' ? '!' : enhancingState === 'active' ? '●' : '○'}
+                </span>
+                Enhancing
+              </li>
+              <li className="hidden text-border sm:block">→</li>
+              <li className={`flex items-center gap-2 ${stageClass(processingState)}`}>
+                <span className={stageBubble(processingState)}>
+                  {processingState === 'done'
+                    ? '✓'
+                    : processingState === 'error'
+                      ? '!'
+                      : processingState === 'active'
+                        ? '●'
+                        : '○'}
                 </span>
                 Processing
               </li>
               <li className="hidden text-border sm:block">→</li>
-              <li className={`flex items-center gap-2 ${result.ok ? 'text-status-low' : 'text-muted'}`}>
-                <span className={`flex size-6 items-center justify-center rounded-full ${result.ok ? 'bg-status-low/20 text-status-low' : 'border border-border'}`}>
-                  {result.ok ? '✓' : '○'}
+              <li className={`flex items-center gap-2 ${stageClass(framesState)}`}>
+                <span className={stageBubble(framesState)}>
+                  {framesState === 'done' ? '✓' : framesState === 'error' ? '!' : '○'}
                 </span>
                 Frames + ML stub
               </li>
             </ol>
 
-            <p className="mt-3 text-xs text-muted">
-              Video ID: <span className="font-mono">{result.video_id}</span>
-              {typeof frameCount === 'number' ? ` · ${frameCount} frame${frameCount === 1 ? '' : 's'}` : ''}
-              {typeof duration === 'number' ? ` · ${duration.toFixed(2)}s` : ''}
-            </p>
+            {videoId ? (
+              <p className="mt-3 text-xs text-muted">
+                Video ID: <span className="font-mono">{videoId}</span>
+                {typeof frameCount === 'number' ? ` · ${frameCount} frame${frameCount === 1 ? '' : 's'}` : ''}
+                {typeof duration === 'number' ? ` · ${duration.toFixed(2)}s` : ''}
+              </p>
+            ) : null}
           </div>
         ) : null}
 

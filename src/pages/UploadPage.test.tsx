@@ -21,7 +21,22 @@ vi.mock('../components/FootageDropZone', () => ({
 }))
 
 vi.mock('../components/VesselDetailsForm', () => ({
-  default: () => <div>Vessel form</div>,
+  default: ({ onChange }: { onChange: (next: { vessel_name: string; inspection_date: string; operator_name: string; location: string; notes: string }) => void }) => (
+    <button
+      type="button"
+      onClick={() =>
+        onChange({
+          vessel_name: 'Test Vessel',
+          inspection_date: '2026-05-09',
+          operator_name: 'Operator',
+          location: 'Gold Coast',
+          notes: '',
+        })
+      }
+    >
+      Fill vessel form
+    </button>
+  ),
 }))
 
 vi.mock('../components/ImportStatusCard', () => ({
@@ -49,6 +64,7 @@ describe('UploadPage', () => {
     )
 
     fireEvent.click(screen.getByRole('button', { name: /pick mock file/i }))
+    fireEvent.click(screen.getByRole('button', { name: /fill vessel form/i }))
     fireEvent.click(screen.getByRole('button', { name: /upload video & queue job/i }))
 
     await waitFor(() => {

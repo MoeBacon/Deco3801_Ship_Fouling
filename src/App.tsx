@@ -1,12 +1,14 @@
+import { Suspense, lazy } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import MainLayout from './components/MainLayout'
 import { AuthProvider, useAuth } from './features/auth/AuthContext'
 import { ROUTES } from './lib/routes'
-import AnalysisPage from './pages/AnalysisPage'
-import DashboardPage from './pages/DashboardPage'
 import LoginPage from './pages/LoginPage'
-import ReportsPage from './pages/ReportsPage'
-import UploadPage from './pages/UploadPage'
+
+const AnalysisPage = lazy(() => import('./pages/AnalysisPage'))
+const DashboardPage = lazy(() => import('./pages/DashboardPage'))
+const ReportsPage = lazy(() => import('./pages/ReportsPage'))
+const UploadPage = lazy(() => import('./pages/UploadPage'))
 
 function ProtectedLayout() {
   const auth = useAuth()
@@ -33,11 +35,46 @@ export default function App() {
             <Route path={ROUTES.login} element={<LoginRoute />} />
 
             <Route element={<ProtectedLayout />}>
-              <Route path={ROUTES.dashboard} element={<DashboardPage />} />
-              <Route path={ROUTES.upload} element={<UploadPage />} />
-              <Route path={ROUTES.analysis} element={<AnalysisPage />} />
-              <Route path={`${ROUTES.analysis}/:videoId`} element={<AnalysisPage />} />
-              <Route path={ROUTES.reports} element={<ReportsPage />} />
+              <Route
+                path={ROUTES.dashboard}
+                element={
+                  <Suspense fallback={<div className="p-6 text-sm text-muted">Loading page...</div>}>
+                    <DashboardPage />
+                  </Suspense>
+                }
+              />
+              <Route
+                path={ROUTES.upload}
+                element={
+                  <Suspense fallback={<div className="p-6 text-sm text-muted">Loading page...</div>}>
+                    <UploadPage />
+                  </Suspense>
+                }
+              />
+              <Route
+                path={ROUTES.analysis}
+                element={
+                  <Suspense fallback={<div className="p-6 text-sm text-muted">Loading page...</div>}>
+                    <AnalysisPage />
+                  </Suspense>
+                }
+              />
+              <Route
+                path={`${ROUTES.analysis}/:videoId`}
+                element={
+                  <Suspense fallback={<div className="p-6 text-sm text-muted">Loading page...</div>}>
+                    <AnalysisPage />
+                  </Suspense>
+                }
+              />
+              <Route
+                path={ROUTES.reports}
+                element={
+                  <Suspense fallback={<div className="p-6 text-sm text-muted">Loading page...</div>}>
+                    <ReportsPage />
+                  </Suspense>
+                }
+              />
             </Route>
 
             <Route path="/" element={<Navigate to={ROUTES.login} replace />} />
