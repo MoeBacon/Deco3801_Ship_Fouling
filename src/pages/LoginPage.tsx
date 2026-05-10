@@ -75,7 +75,7 @@ export default function LoginPage() {
                 name="email"
                 type="text"
                 autoComplete="username"
-                placeholder="you@example.com"
+                placeholder="yourname@gmail.com"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none ring-accent/40 placeholder:text-slate-400 focus:border-accent focus:ring-2"
