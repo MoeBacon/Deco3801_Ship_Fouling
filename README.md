@@ -55,8 +55,10 @@ Deco3801_Ship_Fouling/          ← repo root (also the frontend)
 
 ### Step 1 — Clone the Repository
 
+### Clone the main from https://github.com/MoeBacon/Deco3801_Ship_Fouling
+
 ```bash
-git clone -b frontend2 --single-branch https://github.com/MoeBacon/Deco3
+git clone https://github.com/MoeBacon/Deco3801_Ship_Fouling
 ```
 
 ---
@@ -84,11 +86,13 @@ ROBOFLOW_MODEL_ID=hull-185ts/1
 #### 2.3 Activate the Virtual Environment
 
 **Windows:**
+
 ```bash
 .\venv\Scripts\activate
 ```
 
 **Mac / Linux:**
+
 ```bash
 source venv/bin/activate
 ```
@@ -142,7 +146,7 @@ http://localhost:5173/
 ## Test Login Credentials
 
 | Field    | Value   |
-|----------|---------|
+| -------- | ------- |
 | Username | `admin` |
 | Password | `admin` |
 
@@ -150,10 +154,10 @@ http://localhost:5173/
 
 ## Available Scripts (Frontend)
 
-| Command           | Description                        |
-|-------------------|------------------------------------|
-| `npm run dev`     | Start development server           |
-| `npm run build`   | Build for production               |
-| `npm run preview` | Preview the production build       |
-| `npm run test`    | Run unit tests                     |
-| `npm run lint`    | Run ESLint                         |
+| Command           | Description                  |
+| ----------------- | ---------------------------- |
+| `npm run dev`     | Start development server     |
+| `npm run build`   | Build for production         |
+| `npm run preview` | Preview the production build |
+| `npm run test`    | Run unit tests               |
+| `npm run lint`    | Run ESLint                   |
