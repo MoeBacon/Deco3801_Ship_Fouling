@@ -80,7 +80,7 @@ In the `Backend` folder, create a file named `.env` with the following contents:
 
 ```
 ROBOFLOW_API_KEY=6atWA2cbQchB3BYxyeTs
-ROBOFLOW_MODEL_ID=hull-185ts/1
+ROBOFLOW_MODEL_ID=hull-updated/1
 ```
 
 #### 2.3 Activate the Virtual Environment
