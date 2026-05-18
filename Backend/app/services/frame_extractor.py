@@ -4,10 +4,20 @@ import uuid
 import cv2
 
 from app.services.ml_stub import run_ml_on_frame
-from app.services.preprocessing import enhance_frame
+from app.services.preprocessing import (
+    enhance_frame,
+    has_enough_detail,
+    is_blurry,
+    is_duplicate,
+)
 
 # Extract every Nth frame to avoid processing too many frames from long videos.
-FRAME_SAMPLE_RATE = 30
+FRAME_SAMPLE_RATE = 120
+
+# Quality filter thresholds — tune these to control how strict filtering is.
+BLUR_THRESHOLD = 25.0    # raise to reject more blurry frames
+DETAIL_THRESHOLD = 0.05  # raise to reject more low-texture frames
+SSIM_THRESHOLD = 0.70    # raise to catch more near-duplicate frames
 
 
 def extract_frames(video_path: str, video_id: str) -> dict:
@@ -30,6 +40,7 @@ def extract_frames(video_path: str, video_id: str) -> dict:
     frame_results = []
     frame_index = 0
     saved_count = 0
+    previous_kept_frame = None  # used for duplicate detection
 
     while True:
         status, frame = cap.read()
@@ -39,7 +50,37 @@ def extract_frames(video_path: str, video_id: str) -> dict:
 
         # START OF INEFFICIENT FRAME STORAGE **** FIX THIS LATER ****
         if frame_index % FRAME_SAMPLE_RATE == 0:
-            # BGR -> RGB (as expected by ML model).
+
+            # ---------------------------------------------------------
+            # QUALITY FILTERING (on raw BGR frame, before enhancement)
+            # ---------------------------------------------------------
+
+            blurry, blur_score = is_blurry(frame, threshold=BLUR_THRESHOLD)
+            if blurry:
+                print(f"[REJECTED - BLURRY] Frame {frame_index} (variance={blur_score:.2f})")
+                frame_index += 1
+                continue
+
+            enough_detail, detail_score = has_enough_detail(frame, threshold=DETAIL_THRESHOLD)
+            if not enough_detail:
+                print(f"[REJECTED - LOW DETAIL] Frame {frame_index} (std={detail_score:.4f})")
+                frame_index += 1
+                continue
+
+            if previous_kept_frame is not None:
+                duplicate, ssim_score = is_duplicate(frame, previous_kept_frame, threshold=SSIM_THRESHOLD)
+                if duplicate:
+                    print(f"[REJECTED - DUPLICATE] Frame {frame_index} (SSIM={ssim_score:.4f})")
+                    frame_index += 1
+                    continue
+
+            # ---------------------------------------------------------
+            # FRAME ACCEPTED — enhance, save, run ML
+            # ---------------------------------------------------------
+
+            previous_kept_frame = frame.copy()
+
+            # BGR -> RGB (as expected by enhancement pipeline and ML model).
             frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             enhanced = enhance_frame(frame_rgb) # In-memory numpy array
 
@@ -68,6 +109,11 @@ def extract_frames(video_path: str, video_id: str) -> dict:
                 frame_timestamp = frame_index / videos_frames_per_second
             else:
                 frame_timestamp = 0
+
+            print(
+                f"[ACCEPTED] Frame {frame_index} | "
+                f"Blur={blur_score:.2f} | Detail={detail_score:.4f}"
+            )
 
             frame_results.append(
                 {

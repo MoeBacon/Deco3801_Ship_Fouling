@@ -5,3 +5,4 @@ opencv-contrib-python-headless>=4.10.0
 numpy>=1.26.0,<2.0.0
 python-dotenv>=1.0.1
 inference-sdk>=0.40.0; python_version < "3.13"
+scikit-image>=0.24.0
