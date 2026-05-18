@@ -8,3 +8,4 @@ inference-sdk>=0.40.0; python_version < "3.13"
 scikit-image>=0.24.0
 python-jose[cryptography]>=3.3.0
 passlib[bcrypt]>=1.7.4
+bcrypt<4.0.0

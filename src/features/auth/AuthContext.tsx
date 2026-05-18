@@ -1,10 +1,13 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react'
+import { api } from '../../lib/api'
 import { clearAuthSession, readAuthSession, writeAuthSession } from './session'
+
+type LoginResult = { ok: true } | { ok: false; message: string }
 
 type AuthContextValue = {
   isAuthenticated: boolean
   username: string | null
-  login: (username: string, password: string) => { ok: true } | { ok: false; message: string }
+  login: (username: string, password: string) => Promise<LoginResult>
   logout: () => void
 }
 
@@ -18,7 +21,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => ({
       isAuthenticated: Boolean(username),
       username,
-      login: (rawUsername: string, password: string) => {
+      login: async (rawUsername: string, password: string): Promise<LoginResult> => {
         const normalized = rawUsername.trim()
         const normalizedPassword = password.trim()
 
@@ -26,13 +29,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return { ok: false, message: 'Enter username and password.' }
         }
 
-        if (normalized !== 'admin' || normalizedPassword !== 'admin') {
-          return { ok: false, message: 'Invalid credentials. Use admin / admin.' }
+        try {
+          const response = await api.post<{ access_token: string }>('/auth/login', {
+            username: normalized,
+            password: normalizedPassword,
+          })
+          const token = response.data.access_token
+          writeAuthSession(normalized, token)
+          setUsername(normalized)
+          return { ok: true }
+        } catch {
+          return { ok: false, message: 'Invalid username or password.' }
         }
-
-        writeAuthSession('admin')
-        setUsername('admin')
-        return { ok: true }
       },
       logout: () => {
         clearAuthSession()

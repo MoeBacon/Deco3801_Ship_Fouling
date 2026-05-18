@@ -72,6 +72,7 @@ All backend steps run from inside the `Backend` folder of the cloned repo.
 ```bash
 cd Deco3801_Ship_Fouling\Backend
 py -3.11 -m venv venv
+# again, python not python3? 
 ```
 
 #### 2.2 Create the `.env` File
@@ -80,7 +81,7 @@ In the `Backend` folder, create a file named `.env` with the following contents:
 
 ```
 ROBOFLOW_API_KEY=6atWA2cbQchB3BYxyeTs
-ROBOFLOW_MODEL_ID=hull-updated/1
+ROBOFLOW_MODEL_ID=enable-startup/hull-updated/2
 ```
 
 #### 2.3 Activate the Virtual Environment
@@ -107,6 +108,7 @@ pip install -r requirements.txt
 
 ```bash
 python3 -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+# should this say python instead of python3
 ```
 
 Leave this terminal running.
