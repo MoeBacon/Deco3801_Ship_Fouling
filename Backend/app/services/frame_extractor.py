@@ -37,19 +37,20 @@ def extract_frames(video_path: str, video_id: str) -> dict:
         if not status:
             break
 
+        # START OF INEFFICIENT FRAME STORAGE **** FIX THIS LATER ****
         if frame_index % FRAME_SAMPLE_RATE == 0:
             # BGR -> RGB (as expected by ML model).
             frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            enhanced = enhance_frame(frame_rgb)
+            enhanced = enhance_frame(frame_rgb) # In-memory numpy array
 
             frame_filename = f"frame_{saved_count:04d}.jpg"
             file_path = os.path.join(output_dir, frame_filename)
-            cv2.imwrite(file_path, cv2.cvtColor(enhanced, cv2.COLOR_RGB2BGR))
+            cv2.imwrite(file_path, cv2.cvtColor(enhanced, cv2.COLOR_RGB2BGR)) # Writes to disk early!!!
 
             ml_detections = []
             annotated_image_array = None
             try:
-                result = run_ml_on_frame(enhanced)
+                result = run_ml_on_frame(enhanced) # Runs ML on in-memory array
                 ml_detections = result.get("detections", [])
                 annotated_image_array = result.get("annotated_image")
             except Exception as e:
@@ -61,7 +62,7 @@ def extract_frames(video_path: str, video_id: str) -> dict:
             if annotated_image_array is not None:
                 annotated_filename = f"frame_{saved_count:04d}_annotated.jpg"
                 annotated_file_path = os.path.join(output_dir, annotated_filename)
-                cv2.imwrite(annotated_file_path, annotated_image_array)
+                cv2.imwrite(annotated_file_path, annotated_image_array) # Writes annotated image to disk
 
             if videos_frames_per_second > 0:
                 frame_timestamp = frame_index / videos_frames_per_second
