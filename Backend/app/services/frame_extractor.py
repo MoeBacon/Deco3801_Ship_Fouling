@@ -12,7 +12,7 @@ from app.services.preprocessing import (
 )
 
 # Extract every Nth frame to avoid processing too many frames from long videos.
-FRAME_SAMPLE_RATE = 120
+FRAME_SAMPLE_RATE = 12
 
 # Quality filter thresholds — tune these to control how strict filtering is.
 BLUR_THRESHOLD = 25.0    # raise to reject more blurry frames
@@ -55,24 +55,26 @@ def extract_frames(video_path: str, video_id: str) -> dict:
             # QUALITY FILTERING (on raw BGR frame, before enhancement)
             # ---------------------------------------------------------
 
-            blurry, blur_score = is_blurry(frame, threshold=BLUR_THRESHOLD)
-            if blurry:
-                print(f"[REJECTED - BLURRY] Frame {frame_index} (variance={blur_score:.2f})")
-                frame_index += 1
-                continue
-
-            enough_detail, detail_score = has_enough_detail(frame, threshold=DETAIL_THRESHOLD)
-            if not enough_detail:
-                print(f"[REJECTED - LOW DETAIL] Frame {frame_index} (std={detail_score:.4f})")
-                frame_index += 1
-                continue
-
-            if previous_kept_frame is not None:
-                duplicate, ssim_score = is_duplicate(frame, previous_kept_frame, threshold=SSIM_THRESHOLD)
-                if duplicate:
-                    print(f"[REJECTED - DUPLICATE] Frame {frame_index} (SSIM={ssim_score:.4f})")
+            USE_QUALITY_CHECKS = False  # set to True to enable all checks, False to accept all frames
+            if USE_QUALITY_CHECKS:
+                blurry, blur_score = is_blurry(frame, threshold=BLUR_THRESHOLD)
+                if blurry:
+                    print(f"[REJECTED - BLURRY] Frame {frame_index} (variance={blur_score:.2f})")
                     frame_index += 1
                     continue
+
+                enough_detail, detail_score = has_enough_detail(frame, threshold=DETAIL_THRESHOLD)
+                if not enough_detail:
+                    print(f"[REJECTED - LOW DETAIL] Frame {frame_index} (std={detail_score:.4f})")
+                    frame_index += 1
+                    continue
+
+                if previous_kept_frame is not None:
+                    duplicate, ssim_score = is_duplicate(frame, previous_kept_frame, threshold=SSIM_THRESHOLD)
+                    if duplicate:
+                        print(f"[REJECTED - DUPLICATE] Frame {frame_index} (SSIM={ssim_score:.4f})")
+                        frame_index += 1
+                        continue
 
             # ---------------------------------------------------------
             # FRAME ACCEPTED — enhance, save, run ML
@@ -110,10 +112,13 @@ def extract_frames(video_path: str, video_id: str) -> dict:
             else:
                 frame_timestamp = 0
 
-            print(
-                f"[ACCEPTED] Frame {frame_index} | "
-                f"Blur={blur_score:.2f} | Detail={detail_score:.4f}"
-            )
+            if USE_QUALITY_CHECKS:
+                print(
+                    f"[ACCEPTED] Frame {frame_index} | "
+                    f"Blur={blur_score:.2f} | Detail={detail_score:.4f}"
+                )
+            else:
+                print(f"[ACCEPTED] Frame {frame_index} | quality checks disabled")
 
             frame_results.append(
                 {
