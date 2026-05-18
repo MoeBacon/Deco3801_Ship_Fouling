@@ -6,7 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 
 from app.database import init_database
-from app.routers import videos, jobs, frames
+from app.routers import videos, jobs, frames, auth
 
 
 @asynccontextmanager
@@ -37,6 +37,7 @@ os.makedirs("frames", exist_ok=True)
 app.mount("/static", StaticFiles(directory="frames"), name="static")
 
 # all endpoints versioned under /api/v1
+app.include_router(auth.router, prefix="/api/v1")
 app.include_router(videos.router, prefix="/api/v1")
 app.include_router(jobs.router, prefix="/api/v1")
 app.include_router(frames.router, prefix="/api/v1")

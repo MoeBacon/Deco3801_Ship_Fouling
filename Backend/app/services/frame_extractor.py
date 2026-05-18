@@ -11,6 +11,45 @@ from app.services.preprocessing import (
     is_duplicate,
 )
 
+
+def extract_single_image(image_path: str, video_id: str) -> dict:
+    output_dir = os.path.join("frames", video_id)
+    os.makedirs(output_dir, exist_ok=True)
+
+    bgr_frame = cv2.imread(image_path)
+    if bgr_frame is None:
+        raise RuntimeError(f"Could not read image file: {image_path}")
+
+    frame_rgb = cv2.cvtColor(bgr_frame, cv2.COLOR_BGR2RGB)
+    enhanced = enhance_frame(frame_rgb)
+
+    file_path = os.path.join(output_dir, "frame_0000.jpg")
+    cv2.imwrite(file_path, cv2.cvtColor(enhanced, cv2.COLOR_RGB2BGR))
+
+    ml_detections = []
+    annotated_image_array = None
+    try:
+        result = run_ml_on_frame(enhanced)
+        ml_detections = result.get("detections", [])
+        annotated_image_array = result.get("annotated_image")
+    except Exception as e:
+        print(f"ML inference failed on image: {e}")
+
+    annotated_file_path = None
+    if annotated_image_array is not None:
+        annotated_file_path = os.path.join(output_dir, "frame_0000_annotated.jpg")
+        cv2.imwrite(annotated_file_path, annotated_image_array)
+
+    return {
+        "frame_id": str(uuid.uuid4()),
+        "frame_number": 0,
+        "timestamp_in_video": 0.0,
+        "file_path": file_path,
+        "annotated_file_path": annotated_file_path,
+        "enhancement_applied": "Gray-world White Balance and CLAHE",
+        "detections": ml_detections,
+    }
+
 # Extract every Nth frame to avoid processing too many frames from long videos.
 FRAME_SAMPLE_RATE = 12
 

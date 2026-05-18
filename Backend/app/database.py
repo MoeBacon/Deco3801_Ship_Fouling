@@ -1,5 +1,6 @@
 import os
 import sqlite3
+import uuid
 
 DATABASE_PATH = "ship_fouling.db"
 
@@ -74,6 +75,26 @@ def init_database():
             connection.commit()
         except sqlite3.OperationalError:
             pass  # Column already exists
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS users (
+            id TEXT PRIMARY KEY,
+            username TEXT UNIQUE NOT NULL,
+            hashed_password TEXT NOT NULL
+        )
+    """
+    )
+
+    existing_users = cursor.execute("SELECT COUNT(*) FROM users").fetchone()[0]
+    if existing_users == 0:
+        from app.auth_utils import hash_password
+        hashed = hash_password("inspector123")
+        cursor.execute(
+            "INSERT INTO users (id, username, hashed_password) VALUES (?, ?, ?)",
+            (str(uuid.uuid4()), "admin", hashed),
+        )
+        print("Default user created — username: admin  password: inspector123")
 
     connection.commit()
     connection.close()

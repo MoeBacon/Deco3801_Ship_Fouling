@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
 from app.database import get_connection
+from app.dependencies import get_current_user
 from app.schemas import DetectionResponse, FrameResponse
 
 router = APIRouter()
@@ -21,7 +22,7 @@ def to_static_url(file_path: str) -> str:
 
 
 @router.get("/videos/{video_id}/frames", response_model=list[FrameResponse])
-def get_frames(video_id: str):
+def get_frames(video_id: str, _user: str = Depends(get_current_user)):
     connection = get_connection()
     cursor = connection.cursor()
 
@@ -65,7 +66,7 @@ def get_frames(video_id: str):
 
 
 @router.get("/frames/{frame_id}/detections", response_model=list[DetectionResponse])
-def get_detections(frame_id: str):
+def get_detections(frame_id: str, _user: str = Depends(get_current_user)):
     connection = get_connection()
     cursor = connection.cursor()
 

@@ -1,13 +1,14 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
 from app.database import get_connection
+from app.dependencies import get_current_user
 from app.schemas import JobStatusResponse
 
 router = APIRouter()
 
 
 @router.get("/jobs/{video_id}", response_model=JobStatusResponse)
-def get_job_status(video_id: str):
+def get_job_status(video_id: str, _user: str = Depends(get_current_user)):
     connection = get_connection()
     cursor = connection.cursor()
 
