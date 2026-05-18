@@ -27,7 +27,7 @@ async function pollJobUntilDone(
   onStatus: (status: JobStatusResponse) => void,
   options: PollOptions = {},
 ): Promise<JobStatusResponse> {
-  const { intervalMs = 1500, timeoutMs = 5 * 60 * 1000, signal } = options
+  const { intervalMs = 1500, timeoutMs = 10 * 60 * 1000, signal } = options
   const start = Date.now()
 
   for (;;) {
