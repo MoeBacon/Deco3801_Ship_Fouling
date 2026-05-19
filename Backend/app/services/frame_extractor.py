@@ -117,6 +117,19 @@ def extract_frames(video_path: str, video_id: str) -> dict:
                     frame_index += 1
                     continue
 
+                enough_detail, detail_score = has_enough_detail(frame, threshold=DETAIL_THRESHOLD)
+                if not enough_detail:
+                    print(f"[REJECTED - LOW DETAIL] Frame {frame_index} (std={detail_score:.4f})")
+                    frame_index += 1
+                    continue
+
+                if previous_kept_frame is not None:
+                    duplicate, ssim_score = is_duplicate(frame, previous_kept_frame, threshold=SSIM_THRESHOLD)
+                    if duplicate:
+                        print(f"[REJECTED - DUPLICATE] Frame {frame_index} (SSIM={ssim_score:.4f})")
+                        frame_index += 1
+                        continue
+
             # ---------------------------------------------------------
             # FRAME ACCEPTED — enhance, save, run ML
             # ---------------------------------------------------------
