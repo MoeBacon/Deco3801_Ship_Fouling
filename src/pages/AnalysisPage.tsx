@@ -4,7 +4,7 @@ import PageHeader from '../components/PageHeader'
 import { getFrameDetections, loadAnalysisByVideoId } from '../features/analysis/api'
 import type { DetectionResponse, FrameResponse, ImportInspectionResponse } from '../features/analysis/types'
 import { normalizeApiError } from '../lib/apiError'
-import { saveReport } from '../lib/reportStorage'
+import { saveReport, type ReportData } from '../lib/reportStorage'
 import { ROUTES } from '../lib/routes'
 import { formatTimestamp } from '../lib/time'
 
@@ -306,47 +306,55 @@ export default function AnalysisPage() {
   const vesselName = imported?.vessel.vessel_name || (videoId ? `Video ${videoId}` : 'Analysis')
   const breadcrumbs = ['Inspections', vesselName, 'Analysis']
 
+  const buildReportPayload = (
+    reportDetections: Record<string, DetectionResponse[]>,
+  ): ReportData => ({
+    generatedAt: new Date().toISOString(),
+    vessel: imported?.vessel ?? { vessel_name: '', inspection_date: '', operator_name: '', location: '', notes: '' },
+    video_id: imported?.video_id ?? videoId ?? '',
+    file: imported?.file ?? { client_filename: null, size_bytes: 0 },
+    job: {
+      frame_count: imported?.job.frame_count ?? frames.length,
+      duration: imported?.job.duration ?? null,
+      status: imported?.job.status ?? 'done',
+    },
+    frames,
+    detectionsByFrame: reportDetections,
+  })
+
+  const collectDetectionsForExport = async (): Promise<Record<string, DetectionResponse[]>> => {
+    const reportDetections: Record<string, DetectionResponse[]> = {}
+    await Promise.all(
+      frames.map(async (frame) => {
+        const cacheKey = `${analysisContextKey}:${frame.frame_id}`
+        const cached = detectionsByFrame[cacheKey]
+        if (cached !== undefined) {
+          reportDetections[frame.frame_id] = cached
+          return
+        }
+        try {
+          const dets = await getFrameDetections(frame.frame_id)
+          reportDetections[frame.frame_id] = dets
+          setDetectionsByFrame((prev) => ({ ...prev, [cacheKey]: dets }))
+        } catch {
+          reportDetections[frame.frame_id] = []
+          setDetectionsByFrame((prev) => ({ ...prev, [cacheKey]: [] }))
+        }
+      }),
+    )
+    return reportDetections
+  }
+
   const generateReport = async () => {
     if (!frames.length) {
-      setReportError('No frames available — run an import first.')
+      setReportError('No frames available. Run an import first.')
       return
     }
     setGeneratingReport(true)
     setReportError(null)
     try {
-      const reportDetections: Record<string, DetectionResponse[]> = {}
-      await Promise.all(
-        frames.map(async (frame) => {
-          const cacheKey = `${analysisContextKey}:${frame.frame_id}`
-          const cached = detectionsByFrame[cacheKey]
-          if (cached !== undefined) {
-            reportDetections[frame.frame_id] = cached
-            return
-          }
-          try {
-            const dets = await getFrameDetections(frame.frame_id)
-            reportDetections[frame.frame_id] = dets
-            setDetectionsByFrame((prev) => ({ ...prev, [cacheKey]: dets }))
-          } catch {
-            reportDetections[frame.frame_id] = []
-            setDetectionsByFrame((prev) => ({ ...prev, [cacheKey]: [] }))
-          }
-        }),
-      )
-
-      const reportData = {
-        generatedAt: new Date().toISOString(),
-        vessel: imported?.vessel ?? { vessel_name: '', inspection_date: '', operator_name: '', location: '', notes: '' },
-        video_id: imported?.video_id ?? videoId ?? '',
-        file: imported?.file ?? { client_filename: null, size_bytes: 0 },
-        job: {
-          frame_count: imported?.job.frame_count ?? frames.length,
-          duration: imported?.job.duration ?? null,
-          status: imported?.job.status ?? 'done',
-        },
-        frames,
-        detectionsByFrame: reportDetections,
-      }
+      const reportDetections = await collectDetectionsForExport()
+      const reportData = buildReportPayload(reportDetections)
       saveReport(reportData)
       void navigate(ROUTES.reports, { state: { report: reportData } })
     } catch (e) {

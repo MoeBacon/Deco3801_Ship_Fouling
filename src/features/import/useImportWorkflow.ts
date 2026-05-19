@@ -8,6 +8,7 @@ import {
   clearImportRuntime,
   IMPORT_RUNTIME_STORAGE_KEY,
   readImportRuntime,
+  setImportSessionBusy,
   writeImportRuntime,
 } from '../../lib/importRuntime'
 
@@ -181,6 +182,7 @@ export function useImportWorkflow(vessel: VesselFormPayload): UseImportWorkflowR
     if (mountedRef.current) {
       setImportError(null)
       setUploading(true)
+      setImportSessionBusy(true)
       setResult(null)
       setLiveJob(null)
       setLiveStage('queued')

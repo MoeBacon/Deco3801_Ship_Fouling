@@ -2,8 +2,10 @@ import { useMemo } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import PageHeader from '../components/PageHeader'
 import type { DetectionResponse, FrameResponse } from '../features/analysis/types'
+import { printInspectionReport } from '../lib/exportReport'
 import { loadReport, type ReportData } from '../lib/reportStorage'
 import { ROUTES } from '../lib/routes'
+import { formatFootageDurationAdaptive, formatTimestamp } from '../lib/time'
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -47,6 +49,74 @@ function coverageBarColor(pct: number): string {
   return '#ef4444'
 }
 
+function hullSectionSeverityLabel(rate: number): string | null {
+  if (rate <= 0) return null
+  if (rate < 0.25) return 'Low'
+  if (rate < 0.55) return 'Moderate'
+  return 'Heavy'
+}
+
+type CategoryHighlight = {
+  classLabel: string
+  peakDetection: DetectionResponse
+  frame: FrameResponse
+  totalDetections: number
+  framesAffected: number
+  avgConfidence: number
+  hullSection: string
+}
+
+function frameHullSectionLabel(frame: FrameResponse, allFrames: FrameResponse[]): string {
+  const idx = allFrames.findIndex((f) => f.frame_id === frame.frame_id)
+  if (idx < 0 || !allFrames.length) return '-'
+  const sectionCount = 6
+  const sectionIndex = Math.min(
+    sectionCount - 1,
+    Math.floor((idx / allFrames.length) * sectionCount),
+  )
+  return `Hull section ${sectionIndex + 1}`
+}
+
+function computeCategoryHighlights(report: ReportData): CategoryHighlight[] {
+  const frameById = new Map(report.frames.map((f) => [f.frame_id, f]))
+  const byLabel = new Map<string, DetectionResponse[]>()
+
+  for (const dets of Object.values(report.detectionsByFrame)) {
+    for (const d of dets) {
+      const list = byLabel.get(d.class_label) ?? []
+      list.push(d)
+      byLabel.set(d.class_label, list)
+    }
+  }
+
+  const highlights: CategoryHighlight[] = []
+  for (const [classLabel, detections] of byLabel) {
+    const peak = detections.reduce((best, d) => (d.confidence > best.confidence ? d : best))
+    const frame = frameById.get(peak.frame_id)
+    if (!frame) continue
+
+    const frameIds = new Set(detections.map((d) => d.frame_id))
+    highlights.push({
+      classLabel,
+      peakDetection: peak,
+      frame,
+      totalDetections: detections.length,
+      framesAffected: frameIds.size,
+      avgConfidence: detections.reduce((s, d) => s + d.confidence, 0) / detections.length,
+      hullSection: frameHullSectionLabel(frame, report.frames),
+    })
+  }
+
+  return highlights.sort((a, b) => b.peakDetection.confidence - a.peakDetection.confidence)
+}
+
+function confidenceTier(confidence: number): { label: string; color: string } {
+  const pct = confidence * 100
+  if (pct >= 80) return { label: 'High confidence', color: '#16a34a' }
+  if (pct >= 55) return { label: 'Medium confidence', color: '#f59e0b' }
+  return { label: 'Lower confidence', color: '#64748b' }
+}
+
 function formatDate(iso: string): string {
   try {
     return new Date(iso).toLocaleDateString('en-AU', { day: '2-digit', month: 'long', year: 'numeric' })
@@ -59,6 +129,22 @@ function formatBytes(b: number): string {
   if (b < 1024) return `${b} B`
   if (b < 1024 * 1024) return `${(b / 1024).toFixed(1)} KB`
   return `${(b / (1024 * 1024)).toFixed(1)} MB`
+}
+
+function getVideoDurationForSummary(report: ReportData): { value: string; hint: string } {
+  const sec =
+    report.frames.length > 0
+      ? Math.max(...report.frames.map((f) => f.timestamp_in_video))
+      : typeof report.job.duration === 'number' && Number.isFinite(report.job.duration) && report.job.duration > 0
+        ? report.job.duration
+        : null
+
+  if (sec === null || !Number.isFinite(sec) || sec <= 0) {
+    return { value: '-', hint: '' }
+  }
+
+  const { display, hint } = formatFootageDurationAdaptive(sec)
+  return { value: display, hint }
 }
 
 // ─── Hull Diagram ────────────────────────────────────────────────────────────
@@ -96,7 +182,7 @@ function HullDiagram({
   const hasAnyFouling = sectionRates.some((r) => r > 0)
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+    <div className="report-hull-schematic rounded-lg border border-slate-200 bg-slate-50 p-4">
       <svg viewBox="0 0 600 185" className="w-full" style={{ height: '14rem' }}>
         <defs>
           {/* Clip all section fills to the hull silhouette */}
@@ -112,7 +198,6 @@ function HullDiagram({
           stroke="none"
         />
 
-        {/* Shaded sections — clipped to hull shape */}
         {SECTION_BOUNDS.map(({ x, w }, i) => {
           const rate = sectionRates[i] ?? 0
           if (rate === 0) return null
@@ -155,35 +240,38 @@ function HullDiagram({
           )
         })}
 
-        {/* Per-section coverage % label inside each section */}
         {SECTION_BOUNDS.map(({ x, w }, i) => {
           const rate = sectionRates[i] ?? 0
-          if (rate === 0) return null
+          const label = hullSectionSeverityLabel(rate)
+          if (!label) return null
           return (
             <text
               key={i}
               x={x + w / 2}
               y={103}
               textAnchor="middle"
-              fontSize="9"
+              fontSize={w < 85 ? 8 : 9}
               fontWeight="700"
               fill="#1e293b"
             >
-              {Math.round(rate * 100)}%
+              {label}
             </text>
           )
         })}
       </svg>
 
       {hasAnyFouling ? (
-        <div className="mt-2 flex justify-center gap-6 text-xs text-slate-500">
+        <div className="report-hull-legend mt-2 flex justify-center gap-6 text-xs text-slate-500">
           {[
             { color: '#22c55e', label: 'Low (<25%)' },
             { color: '#f59e0b', label: 'Moderate (25–55%)' },
             { color: '#ef4444', label: 'Heavy (>55%)' },
           ].map(({ color, label }) => (
             <div key={label} className="flex items-center gap-1.5">
-              <span className="inline-block size-3 rounded-sm" style={{ backgroundColor: color, opacity: 0.7 }} />
+              <span
+                className="report-hull-legend-swatch inline-block size-3 shrink-0 rounded-sm border border-slate-400/50"
+                style={{ backgroundColor: color, opacity: 0.85 }}
+              />
               <span>{label}</span>
             </div>
           ))}
@@ -191,6 +279,97 @@ function HullDiagram({
       ) : (
         <p className="mt-2 text-center text-xs text-slate-400">No fouling detected across hull sections.</p>
       )}
+    </div>
+  )
+}
+
+function DetectionSummary({ highlights }: { highlights: CategoryHighlight[] }) {
+  if (!highlights.length) return null
+
+  return (
+    <div className="report-print-section border-b border-slate-200 px-8 py-6">
+      <h2 className="mb-1 text-xs font-bold uppercase tracking-widest text-accent">Detection Summary</h2>
+      <p className="mb-6 text-sm text-slate-500">
+        Strongest match per fouling type: the frame where the model was most confident for each category.
+      </p>
+
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+        {highlights.map((item) => {
+          const peakPct = (item.peakDetection.confidence * 100).toFixed(1)
+          const avgPct = (item.avgConfidence * 100).toFixed(1)
+          const tier = confidenceTier(item.peakDetection.confidence)
+          return (
+            <article
+              key={item.classLabel}
+              className="report-print-card overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
+            >
+              <div className="relative aspect-[4/3] bg-slate-100">
+                <img
+                  src={item.frame.image_url}
+                  alt={`Highest confidence ${item.classLabel}, frame ${item.frame.frame_number}`}
+                  className="h-full w-full object-cover"
+                />
+                <span
+                  className="absolute left-3 top-3 rounded-md px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-white shadow"
+                  style={{ backgroundColor: tier.color }}
+                >
+                  {tier.label}
+                </span>
+                <span className="absolute bottom-3 right-3 rounded-lg bg-slate-900/85 px-3 py-1.5 text-sm font-bold tabular-nums text-white">
+                  {peakPct}% peak
+                </span>
+              </div>
+
+              <div className="space-y-4 p-5">
+                <div>
+                  <h3 className="text-lg font-semibold capitalize text-slate-900">{item.classLabel}</h3>
+                  <p className="mt-0.5 text-sm text-slate-500">Highest-confidence detection for this type</p>
+                </div>
+
+                <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+                  <div>
+                    <dt className="text-xs font-medium uppercase tracking-wide text-slate-400">Peak confidence</dt>
+                    <dd className="mt-0.5 font-semibold tabular-nums text-slate-900">{peakPct}%</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs font-medium uppercase tracking-wide text-slate-400">Avg. confidence</dt>
+                    <dd className="mt-0.5 font-semibold tabular-nums text-slate-900">{avgPct}%</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs font-medium uppercase tracking-wide text-slate-400">Frame</dt>
+                    <dd className="mt-0.5 font-semibold text-slate-900">#{item.frame.frame_number}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs font-medium uppercase tracking-wide text-slate-400">Video time</dt>
+                    <dd className="mt-0.5 font-semibold tabular-nums text-slate-900">
+                      {formatTimestamp(item.frame.timestamp_in_video)}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs font-medium uppercase tracking-wide text-slate-400">Total detections</dt>
+                    <dd className="mt-0.5 font-semibold text-slate-900">{item.totalDetections}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs font-medium uppercase tracking-wide text-slate-400">Frames affected</dt>
+                    <dd className="mt-0.5 font-semibold text-slate-900">{item.framesAffected}</dd>
+                  </div>
+                </dl>
+
+                <p className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                  <span className="font-medium text-slate-700">Location:</span> {item.hullSection}
+                  {item.frame.enhancement_applied ? (
+                    <>
+                      {' · '}
+                      <span className="font-medium text-slate-700">Enhancement:</span>{' '}
+                      {item.frame.enhancement_applied}
+                    </>
+                  ) : null}
+                </p>
+              </div>
+            </article>
+          )
+        })}
+      </div>
     </div>
   )
 }
@@ -246,15 +425,26 @@ export default function ReportsPage() {
 
   const summary = useMemo(() => (report ? computeSummary(report) : null), [report])
 
+  const detectedFrames = useMemo(() => {
+    if (!report) return []
+    return report.frames.filter((frame) => (report.detectionsByFrame[frame.frame_id] ?? []).length > 0)
+  }, [report])
+
+  const categoryHighlights = useMemo(
+    () => (report ? computeCategoryHighlights(report) : []),
+    [report],
+  )
+
   if (!report || !summary) return <EmptyState />
 
   const { totalDetections, sortedLabels, avgConfidence, coveragePct, framesWithDetections } = summary
+  const videoDurationSummary = getVideoDurationForSummary(report)
   const severity = severityFromPct(coveragePct)
   const shortId = (report.video_id.split('-')[0] ?? report.video_id).toUpperCase()
   const generatedDate = formatDate(report.generatedAt)
   const inspectionDate = report.vessel.inspection_date
     ? formatDate(report.vessel.inspection_date)
-    : '—'
+    : '-'
 
   return (
     <div className="flex min-w-0 flex-col gap-6 pb-10">
@@ -272,7 +462,7 @@ export default function ReportsPage() {
             </button>
             <button
               type="button"
-              onClick={() => window.print()}
+              onClick={() => printInspectionReport()}
               className="no-print inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-hover"
             >
               <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden>
@@ -282,7 +472,7 @@ export default function ReportsPage() {
                   d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
                 />
               </svg>
-              Export Report
+              Download PDF
             </button>
           </>
         }
@@ -294,7 +484,7 @@ export default function ReportsPage() {
         <div className="h-3 bg-accent" />
 
         {/* ── 1. Report Header ── */}
-        <div className="flex items-center justify-between gap-6 border-b border-slate-200 px-8 py-6">
+        <div className="report-print-section flex items-center justify-between gap-6 border-b border-slate-200 px-8 py-6">
           <div>
             <p className="text-xs font-medium uppercase tracking-widest text-accent">Biofouling Inspection</p>
             <h1 className="mt-1 text-3xl font-bold text-slate-900">Hull Fouling Inspection Report</h1>
@@ -316,7 +506,7 @@ export default function ReportsPage() {
         </div>
 
         {/* ── 2. Vessel Details ── */}
-        <div className="border-b border-slate-200 px-8 py-6">
+        <div className="report-print-section border-b border-slate-200 px-8 py-6">
           <h2 className="mb-4 text-xs font-bold uppercase tracking-widest text-accent">Vessel Details</h2>
           <div className="grid grid-cols-2 gap-x-12 gap-y-2.5 text-sm">
             {[
@@ -327,7 +517,7 @@ export default function ReportsPage() {
             ].map(({ label, value }) => (
               <div key={label} className="flex gap-3">
                 <span className="w-36 shrink-0 font-medium text-slate-500">{label}</span>
-                <span className="text-slate-900">{value || '—'}</span>
+                <span className="text-slate-900">{value || '-'}</span>
               </div>
             ))}
             {report.vessel.notes ? (
@@ -339,35 +529,77 @@ export default function ReportsPage() {
           </div>
         </div>
 
-        {/* ── 3. Summary Stats ── */}
-        <div className="border-b border-slate-200 bg-slate-50 px-8 py-6">
-          <h2 className="mb-4 text-xs font-bold uppercase tracking-widest text-accent">Inspection Summary</h2>
-          <div className="grid grid-cols-4 gap-4">
-            {[
-              { value: String(report.frames.length), label: 'Frames Analysed' },
-              { value: String(totalDetections), label: 'Total Detections' },
-              {
-                value: `${framesWithDetections} / ${report.frames.length}`,
-                label: 'Frames with Fouling',
-                color: coverageBarColor(coveragePct),
-              },
-              {
-                value: avgConfidence > 0 ? `${(avgConfidence * 100).toFixed(0)}%` : '—',
-                label: 'Avg. Confidence',
-              },
-            ].map(({ value, label, color }) => (
-              <div key={label} className="rounded-lg border border-slate-200 bg-white p-4 text-center shadow-sm">
-                <p className="text-2xl font-bold" style={{ color: color ?? '#1e293b' }}>
-                  {value}
-                </p>
-                <p className="mt-1 text-xs text-slate-500">{label}</p>
+        <div className="report-print-section border-b border-slate-200 bg-slate-50 px-8 py-8">
+          <h2 className="text-xs font-bold uppercase tracking-widest text-accent">Inspection Summary</h2>
+          <p className="mt-1 max-w-2xl text-sm text-slate-500">
+            Overview of footage processed and fouling detected during this inspection.
+          </p>
+
+          <div className="mt-8 space-y-6">
+            <div>
+              <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400">Footage</p>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {[
+                  { value: videoDurationSummary.value, label: 'Footage duration', hint: videoDurationSummary.hint },
+                  {
+                    value: String(report.frames.length),
+                    label: 'Frames analysed',
+                    hint: 'Keyframes extracted and processed',
+                  },
+                ].map(({ value, label, hint }) => (
+                  <div
+                    key={label}
+                    className="report-print-card rounded-xl border border-slate-200 bg-white px-6 py-5 shadow-sm"
+                  >
+                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</p>
+                    <p className="mt-2 text-3xl font-bold tabular-nums text-slate-900">{value}</p>
+                    {hint ? <p className="mt-2 text-xs text-slate-400">{hint}</p> : null}
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
+
+            <div>
+              <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400">Detections</p>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                <div className="report-print-card rounded-xl border border-slate-200 bg-white px-6 py-5 shadow-sm">
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Total detections</p>
+                  <p className="mt-2 text-3xl font-bold tabular-nums text-slate-900">{totalDetections}</p>
+                  <p className="mt-2 text-xs text-slate-400">Individual fouling instances identified</p>
+                </div>
+                <div
+                  className="report-print-card rounded-xl border px-6 py-5 shadow-sm"
+                  style={{
+                    borderColor: `${coverageBarColor(coveragePct)}55`,
+                    backgroundColor: `${coverageBarColor(coveragePct)}0d`,
+                  }}
+                >
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Frames with fouling</p>
+                  <p
+                    className="mt-2 text-3xl font-bold tabular-nums"
+                    style={{ color: coverageBarColor(coveragePct) }}
+                  >
+                    {framesWithDetections}
+                    <span className="text-xl font-semibold text-slate-400"> / {report.frames.length}</span>
+                  </p>
+                  <p className="mt-2 text-xs text-slate-600">
+                    {coveragePct}% of analysed frames contained fouling
+                  </p>
+                </div>
+                <div className="report-print-card rounded-xl border border-slate-200 bg-white px-6 py-5 shadow-sm">
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Avg. confidence</p>
+                  <p className="mt-2 text-3xl font-bold tabular-nums text-slate-900">
+                    {avgConfidence > 0 ? `${(avgConfidence * 100).toFixed(0)}%` : '-'}
+                  </p>
+                  <p className="mt-2 text-xs text-slate-400">Mean model confidence across all detections</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
         {/* ── 4. Fouling Summary ── */}
-        <div className="border-b border-slate-200 px-8 py-6">
+        <div className="report-print-section border-b border-slate-200 px-8 py-6">
           <h2 className="mb-4 text-xs font-bold uppercase tracking-widest text-accent">Fouling Summary</h2>
 
           {/* Biofouling Types */}
@@ -421,7 +653,7 @@ export default function ReportsPage() {
         </div>
 
         {/* ── 5. Detection Breakdown Table ── */}
-        <div className="border-b border-slate-200 px-8 py-6">
+        <div className="report-print-section border-b border-slate-200 px-8 py-6">
           <h2 className="mb-4 text-xs font-bold uppercase tracking-widest text-accent">Detection Results</h2>
           <div className="overflow-hidden rounded-lg border border-slate-200">
             <table className="w-full text-sm">
@@ -483,23 +715,26 @@ export default function ReportsPage() {
         </div>
 
         {/* ── 6. Hull Location Schematic ── */}
-        <div className="border-b border-slate-200 px-8 py-6">
+        <div className="report-print-section border-b border-slate-200 px-8 py-6">
           <h2 className="mb-4 text-xs font-bold uppercase tracking-widest text-accent">Hull Location Schematic</h2>
           <HullDiagram frames={report.frames} detectionsByFrame={report.detectionsByFrame} />
         </div>
 
-        {/* ── 7. Frame Gallery ── */}
-        {report.frames.length > 0 ? (
-          <div className="border-b border-slate-200 px-8 py-6">
-            <h2 className="mb-4 text-xs font-bold uppercase tracking-widest text-accent">Inspection Frames</h2>
+        <DetectionSummary highlights={categoryHighlights} />
+
+        {detectedFrames.length > 0 ? (
+          <div className="report-print-section report-print-allow-break border-b border-slate-200 px-8 py-6">
+            <h2 className="mb-1 text-xs font-bold uppercase tracking-widest text-accent">Detected Frames</h2>
+            <p className="mb-4 text-sm text-slate-500">
+              {detectedFrames.length} of {report.frames.length} analysed frames with fouling detections
+            </p>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-              {report.frames.slice(0, 18).map((frame) => {
+              {detectedFrames.map((frame) => {
                 const dets = report.detectionsByFrame[frame.frame_id] ?? []
-                const hasDets = dets.length > 0
                 return (
                   <div
                     key={frame.frame_id}
-                    className={`overflow-hidden rounded-lg border shadow-sm ${hasDets ? 'border-amber-300' : 'border-slate-200'}`}
+                    className="report-print-card overflow-hidden rounded-lg border border-amber-300 shadow-sm"
                   >
                     <div className="relative bg-slate-100">
                       <img
@@ -507,32 +742,29 @@ export default function ReportsPage() {
                         alt={`Frame ${frame.frame_number}`}
                         className="h-20 w-full object-cover"
                       />
-                      {hasDets ? (
-                        <span className="absolute right-1 top-1 rounded bg-amber-400 px-1 py-0.5 text-[10px] font-bold text-white">
-                          {dets.length}
-                        </span>
-                      ) : null}
+                      <span className="absolute right-1 top-1 rounded bg-amber-400 px-1 py-0.5 text-[10px] font-bold text-white">
+                        {dets.length}
+                      </span>
                     </div>
                     <div className="bg-white px-2 py-1.5">
                       <p className="text-[11px] font-medium text-slate-700">#{frame.frame_number}</p>
                       <p className="text-[10px] text-slate-400">
-                        {hasDets
-                          ? dets
-                              .slice(0, 2)
-                              .map((d) => d.class_label)
-                              .join(', ') + (dets.length > 2 ? '…' : '')
-                          : 'No detections'}
+                        {dets
+                          .slice(0, 2)
+                          .map((d) => d.class_label)
+                          .join(', ')}
+                        {dets.length > 2 ? '…' : ''}
                       </p>
                     </div>
                   </div>
                 )
               })}
             </div>
-            {report.frames.length > 18 ? (
-              <p className="mt-3 text-center text-xs text-slate-400">
-                Showing 18 of {report.frames.length} frames
-              </p>
-            ) : null}
+          </div>
+        ) : report.frames.length > 0 ? (
+          <div className="border-b border-slate-200 px-8 py-6">
+            <h2 className="mb-4 text-xs font-bold uppercase tracking-widest text-accent">Detected Frames</h2>
+            <p className="text-sm text-slate-500">No frames with fouling detections for this inspection.</p>
           </div>
         ) : null}
 
