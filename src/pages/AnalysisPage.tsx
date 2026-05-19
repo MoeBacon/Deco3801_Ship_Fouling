@@ -4,6 +4,7 @@ import PageHeader from '../components/PageHeader'
 import { getFrameDetections, loadAnalysisByVideoId } from '../features/analysis/api'
 import type { DetectionResponse, FrameResponse, ImportInspectionResponse } from '../features/analysis/types'
 import { normalizeApiError } from '../lib/apiError'
+import { downloadAnalysisCsv } from '../lib/exportCsv'
 import { saveReport, type ReportData } from '../lib/reportStorage'
 import { ROUTES } from '../lib/routes'
 import { formatTimestamp } from '../lib/time'
@@ -23,6 +24,7 @@ export default function AnalysisPage() {
   const [detectionError, setDetectionError] = useState<string | null>(null)
   const [detectionsByFrame, setDetectionsByFrame] = useState<Record<string, DetectionResponse[]>>({})
   const [generatingReport, setGeneratingReport] = useState(false)
+  const [exportingData, setExportingData] = useState(false)
   const [reportError, setReportError] = useState<string | null>(null)
   const [hoveredPoint, setHoveredPoint] = useState<{
     frameId: string
@@ -364,6 +366,38 @@ export default function AnalysisPage() {
     }
   }
 
+  const exportCsv = async () => {
+    if (!frames.length) {
+      setReportError('No frames available. Run an import first.')
+      return
+    }
+    setExportingData(true)
+    setReportError(null)
+    try {
+      const detectionsByFrame = await collectDetectionsForExport()
+      downloadAnalysisCsv({
+        videoId: imported?.video_id ?? videoId ?? '',
+        exportedAt: new Date().toISOString(),
+        vessel: imported?.vessel ?? {
+          vessel_name: '',
+          inspection_date: '',
+          operator_name: '',
+          location: '',
+          notes: '',
+        },
+        sourceFilename: imported?.file.client_filename ?? null,
+        jobStatus: imported?.job.status ?? 'done',
+        jobDuration: imported?.job.duration ?? null,
+        frames,
+        detectionsByFrame,
+      })
+    } catch (e) {
+      setReportError('Failed to export CSV: ' + (e instanceof Error ? e.message : 'Unknown error'))
+    } finally {
+      setExportingData(false)
+    }
+  }
+
   useEffect(() => {
     if (!activeFrameId) return
     const target = frameButtonRefs.current[activeFrameId]
@@ -397,13 +431,17 @@ export default function AnalysisPage() {
           <>
             <button
               type="button"
-              className="inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-transparent px-4 py-2 text-sm font-medium text-white hover:bg-surface-1"
+              disabled={exportingData || generatingReport || !frames.length}
+              onClick={() => {
+                void exportCsv()
+              }}
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-transparent px-4 py-2 text-sm font-medium text-white hover:bg-surface-1 disabled:opacity-50"
             >
-              Export data
+              {exportingData ? 'Exporting…' : 'Export CSV'}
             </button>
             <button
               type="button"
-              disabled={generatingReport || !frames.length}
+              disabled={generatingReport || exportingData || !frames.length}
               onClick={() => {
                 void generateReport()
               }}
