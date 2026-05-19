@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import BrandMark from '../components/BrandMark'
 import { useAuth } from '../features/auth/AuthContext'
@@ -10,15 +10,18 @@ export default function LoginPage() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [loginError, setLoginError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
 
-  const onSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    const result = auth.login(username, password)
+    setLoading(true)
+    setLoginError(null)
+    const result = await auth.login(username, password)
+    setLoading(false)
     if (!result.ok) {
       setLoginError(result.message)
       return
     }
-    setLoginError(null)
     void navigate(ROUTES.dashboard, { replace: true })
   }
 
@@ -65,7 +68,7 @@ export default function LoginPage() {
             <p className="text-sm text-slate-600">Sign in to your account to continue</p>
           </div>
 
-          <form className="space-y-5" onSubmit={onSubmit}>
+          <form className="space-y-5" onSubmit={(e) => { void onSubmit(e) }}>
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700" htmlFor="email">
                 Email or Username
@@ -119,9 +122,10 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              className="flex w-full items-center justify-center rounded-lg bg-accent px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-accent-hover"
+              disabled={loading}
+              className="flex w-full items-center justify-center rounded-lg bg-accent px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-accent-hover disabled:opacity-60"
             >
-              Sign In
+              {loading ? 'Signing in…' : 'Sign In'}
             </button>
           </form>
 

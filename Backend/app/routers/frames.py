@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
 from app.database import get_connection
+from app.dependencies import get_current_user
 from app.schemas import DetectionResponse, FrameResponse
 
 router = APIRouter()
@@ -21,7 +22,7 @@ def to_static_url(file_path: str) -> str:
 
 
 @router.get("/videos/{video_id}/frames", response_model=list[FrameResponse])
-def get_frames(video_id: str):
+def get_frames(video_id: str, _user: str = Depends(get_current_user)):
     connection = get_connection()
     cursor = connection.cursor()
 
@@ -33,7 +34,7 @@ def get_frames(video_id: str):
 
     rows = cursor.execute(
         """SELECT id, video_id, frame_number, timestamp_in_video,
-        file_path, enhancement_applied
+        file_path, annotated_file_path, enhancement_applied
         FROM frames WHERE video_id = ?
         ORDER BY frame_number ASC""",
         (video_id,),
@@ -45,6 +46,10 @@ def get_frames(video_id: str):
     for row in rows:
         image_url = to_static_url(row["file_path"])
 
+        annotated_image_url = None
+        if row["annotated_file_path"]:
+            annotated_image_url = to_static_url(row["annotated_file_path"])
+
         frames.append(
             FrameResponse(
                 frame_id=row["id"],
@@ -52,6 +57,7 @@ def get_frames(video_id: str):
                 frame_number=row["frame_number"],
                 timestamp_in_video=row["timestamp_in_video"],
                 image_url=image_url,
+                annotated_image_url=annotated_image_url,
                 enhancement_applied=row["enhancement_applied"],
             )
         )
@@ -60,7 +66,7 @@ def get_frames(video_id: str):
 
 
 @router.get("/frames/{frame_id}/detections", response_model=list[DetectionResponse])
-def get_detections(frame_id: str):
+def get_detections(frame_id: str, _user: str = Depends(get_current_user)):
     connection = get_connection()
     cursor = connection.cursor()
 
@@ -71,7 +77,7 @@ def get_detections(frame_id: str):
         raise HTTPException(status_code=404, detail=f"No frame found with the id {frame_id}")
 
     rows = cursor.execute(
-        "SELECT id, frame_id, class_label, confidence FROM detections WHERE frame_id = ?",
+        "SELECT id, frame_id, class_label, confidence, x, y, width, height FROM detections WHERE frame_id = ?",
         (frame_id,),
     ).fetchall()
 
@@ -83,6 +89,10 @@ def get_detections(frame_id: str):
             frame_id=row["frame_id"],
             class_label=row["class_label"],
             confidence=row["confidence"],
+            x=row["x"],
+            y=row["y"],
+            width=row["width"],
+            height=row["height"],
         )
         for row in rows
     ]

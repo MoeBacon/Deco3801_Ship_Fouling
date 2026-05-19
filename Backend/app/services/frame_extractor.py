@@ -11,13 +11,55 @@ from app.services.preprocessing import (
     is_duplicate,
 )
 
+
+def extract_single_image(image_path: str, video_id: str) -> dict:
+    output_dir = os.path.join("frames", video_id)
+    os.makedirs(output_dir, exist_ok=True)
+
+    bgr_frame = cv2.imread(image_path)
+    if bgr_frame is None:
+        raise RuntimeError(f"Could not read image file: {image_path}")
+
+    frame_rgb = cv2.cvtColor(bgr_frame, cv2.COLOR_BGR2RGB)
+    enhanced = enhance_frame(frame_rgb)
+
+    file_path = os.path.join(output_dir, "frame_0000.jpg")
+    cv2.imwrite(file_path, cv2.cvtColor(enhanced, cv2.COLOR_RGB2BGR))
+
+    ml_detections = []
+    annotated_image_array = None
+    try:
+        result = run_ml_on_frame(enhanced)
+        ml_detections = result.get("detections", [])
+        annotated_image_array = result.get("annotated_image")
+    except Exception as e:
+        print(f"ML inference failed on image: {e}")
+
+    annotated_file_path = None
+    if annotated_image_array is not None:
+        annotated_file_path = os.path.join(output_dir, "frame_0000_annotated.jpg")
+        cv2.imwrite(annotated_file_path, annotated_image_array)
+
+    return {
+        "frame_id": str(uuid.uuid4()),
+        "frame_number": 0,
+        "timestamp_in_video": 0.0,
+        "file_path": file_path,
+        "annotated_file_path": annotated_file_path,
+        "enhancement_applied": "Gray-world White Balance and CLAHE",
+        "detections": ml_detections,
+    }
+
 # Extract every Nth frame to avoid processing too many frames from long videos.
 FRAME_SAMPLE_RATE = 12
 
 # Quality filter thresholds — tune these to control how strict filtering is.
 BLUR_THRESHOLD = 25.0    # raise to reject more blurry frames
 DETAIL_THRESHOLD = 0.05  # raise to reject more low-texture frames
-SSIM_THRESHOLD = 0.70    # raise to catch more near-duplicate frames
+SSIM_THRESHOLD = 0.85    # raise to catch more near-duplicate frames
+
+USE_BLUR_DETAIL_CHECKS = False   # rejects blurry and low-texture frames
+USE_DUPLICATE_CHECK = False     # rejects frames too similar to the previous kept frame
 
 
 def extract_frames(video_path: str, video_id: str) -> dict:
@@ -48,18 +90,30 @@ def extract_frames(video_path: str, video_id: str) -> dict:
         if not status:
             break
 
+        # START OF INEFFICIENT FRAME STORAGE **** FIX THIS LATER ****
         if frame_index % FRAME_SAMPLE_RATE == 0:
 
             # ---------------------------------------------------------
             # QUALITY FILTERING (on raw BGR frame, before enhancement)
             # ---------------------------------------------------------
 
-            USE_QUALITY_CHECKS = False  # set to True to enable all checks, False to accept all frames
-
-            if USE_QUALITY_CHECKS:
+            if USE_BLUR_DETAIL_CHECKS:
                 blurry, blur_score = is_blurry(frame, threshold=BLUR_THRESHOLD)
                 if blurry:
                     print(f"[REJECTED - BLURRY] Frame {frame_index} (variance={blur_score:.2f})")
+                    frame_index += 1
+                    continue
+
+                enough_detail, detail_score = has_enough_detail(frame, threshold=DETAIL_THRESHOLD)
+                if not enough_detail:
+                    print(f"[REJECTED - LOW DETAIL] Frame {frame_index} (std={detail_score:.4f})")
+                    frame_index += 1
+                    continue
+
+            if USE_DUPLICATE_CHECK and previous_kept_frame is not None:
+                duplicate, ssim_score = is_duplicate(frame, previous_kept_frame, threshold=SSIM_THRESHOLD)
+                if duplicate:
+                    print(f"[REJECTED - DUPLICATE] Frame {frame_index} (SSIM={ssim_score:.4f})")
                     frame_index += 1
                     continue
 
@@ -84,26 +138,41 @@ def extract_frames(video_path: str, video_id: str) -> dict:
 
             # BGR -> RGB (as expected by enhancement pipeline and ML model).
             frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            enhanced = enhance_frame(frame_rgb)
+            enhanced = enhance_frame(frame_rgb) # In-memory numpy array
 
             frame_filename = f"frame_{saved_count:04d}.jpg"
             file_path = os.path.join(output_dir, frame_filename)
-            cv2.imwrite(file_path, cv2.cvtColor(enhanced, cv2.COLOR_RGB2BGR))
+            cv2.imwrite(file_path, cv2.cvtColor(enhanced, cv2.COLOR_RGB2BGR)) # Writes to disk early!!!
 
-            ml_detections = run_ml_on_frame(enhanced)
+            ml_detections = []
+            annotated_image_array = None
+            try:
+                result = run_ml_on_frame(enhanced) # Runs ML on in-memory array
+                ml_detections = result.get("detections", [])
+                annotated_image_array = result.get("annotated_image")
+            except Exception as e:
+                print(f"ML inference failed on frame {saved_count}: {e}")
+                # Continue processing other frames without detections
+
+            # here im attempting to save the annotated image that came from ML
+            annotated_file_path = None
+            if annotated_image_array is not None:
+                annotated_filename = f"frame_{saved_count:04d}_annotated.jpg"
+                annotated_file_path = os.path.join(output_dir, annotated_filename)
+                cv2.imwrite(annotated_file_path, annotated_image_array) # Writes annotated image to disk
 
             if videos_frames_per_second > 0:
                 frame_timestamp = frame_index / videos_frames_per_second
             else:
                 frame_timestamp = 0
 
-            if USE_QUALITY_CHECKS:
+            if USE_BLUR_DETAIL_CHECKS:
                 print(
                     f"[ACCEPTED] Frame {frame_index} | "
                     f"Blur={blur_score:.2f} | Detail={detail_score:.4f}"
                 )
             else:
-                print(f"[ACCEPTED] Frame {frame_index} | quality checks disabled")
+                print(f"[ACCEPTED] Frame {frame_index} | blur/detail checks disabled")
 
             frame_results.append(
                 {
@@ -111,6 +180,7 @@ def extract_frames(video_path: str, video_id: str) -> dict:
                     "frame_number": saved_count,
                     "timestamp_in_video": frame_timestamp,
                     "file_path": file_path,
+                    "annotated_file_path": annotated_file_path,
                     "enhancement_applied": "Gray-world White Balance and CLAHE",
                     "detections": ml_detections,
                 }

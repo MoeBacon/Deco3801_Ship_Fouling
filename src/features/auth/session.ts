@@ -2,6 +2,7 @@ const AUTH_SESSION_KEY = 'ship-auth-session-v1'
 
 type AuthSession = {
   username: string
+  token: string
   loggedInAt: string
 }
 
@@ -16,16 +17,18 @@ export function readAuthSession(): AuthSession | null {
     const parsed = JSON.parse(raw) as unknown
     if (!isObject(parsed)) return null
     if (typeof parsed.username !== 'string') return null
+    if (typeof parsed.token !== 'string') return null
     if (typeof parsed.loggedInAt !== 'string') return null
-    return { username: parsed.username, loggedInAt: parsed.loggedInAt }
+    return { username: parsed.username, token: parsed.token, loggedInAt: parsed.loggedInAt }
   } catch {
     return null
   }
 }
 
-export function writeAuthSession(username: string): void {
+export function writeAuthSession(username: string, token: string): void {
   const session: AuthSession = {
     username,
+    token,
     loggedInAt: new Date().toISOString(),
   }
   window.localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(session))

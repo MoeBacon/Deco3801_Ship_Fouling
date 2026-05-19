@@ -39,5 +39,6 @@ export type FrameResponse = {
   frame_number: number
   timestamp_in_video: number
   image_url: string
+  annotated_image_url?: string | null
   enhancement_applied?: string | null
 }

@@ -503,7 +503,7 @@ export default function ReportsPage() {
                   >
                     <div className="relative bg-slate-100">
                       <img
-                        src={frame.image_url}
+                        src={frame.annotated_image_url ?? frame.image_url}
                         alt={`Frame ${frame.frame_number}`}
                         className="h-20 w-full object-cover"
                       />

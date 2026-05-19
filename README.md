@@ -107,6 +107,7 @@ pip install -r requirements.txt
 
 ```bash
 python3 -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+# should this say python instead of python3 (i think so)
 ```
 
 Leave this terminal running.
@@ -143,12 +144,12 @@ http://localhost:5173/
 
 ---
 
-## Test Login Credentials
+## Login Credentials
 
 | Field    | Value   |
 | -------- | ------- |
 | Username | `admin` |
-| Password | `admin` |
+| Password | `inspector123` |
 
 ---
 

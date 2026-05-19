@@ -54,7 +54,9 @@ export async function uploadVideo(file: File, signal?: AbortSignal): Promise<Vid
   body.append('file', file)
 
   const requestConfig = signal ? { signal } : undefined
-  const { data } = await api.post<unknown>('/videos', body, requestConfig)
+  const isImage = file.type.startsWith('image/')
+  const endpoint = isImage ? '/images' : '/videos'
+  const { data } = await api.post<unknown>(endpoint, body, requestConfig)
   const parsed = parseVideoUploadResponse(data)
   return {
     video_id: parsed.video_id,
