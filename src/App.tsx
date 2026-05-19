@@ -2,6 +2,7 @@ import { Suspense, lazy } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import MainLayout from './components/MainLayout'
 import { AuthProvider, useAuth } from './features/auth/AuthContext'
+import { useImportInProgress } from './hooks/useImportInProgress'
 import { ROUTES } from './lib/routes'
 import LoginPage from './pages/LoginPage'
 
@@ -24,6 +25,30 @@ function LoginRoute() {
     return <Navigate to={ROUTES.dashboard} replace />
   }
   return <LoginPage />
+}
+
+function ReportsRoute() {
+  const importInProgress = useImportInProgress()
+  if (importInProgress) {
+    return <Navigate to={ROUTES.upload} replace />
+  }
+  return (
+    <Suspense fallback={<div className="p-6 text-sm text-muted">Loading page...</div>}>
+      <ReportsPage />
+    </Suspense>
+  )
+}
+
+function AnalysisRoute() {
+  const importInProgress = useImportInProgress()
+  if (importInProgress) {
+    return <Navigate to={ROUTES.upload} replace />
+  }
+  return (
+    <Suspense fallback={<div className="p-6 text-sm text-muted">Loading page...</div>}>
+      <AnalysisPage />
+    </Suspense>
+  )
 }
 
 export default function App() {
@@ -51,29 +76,11 @@ export default function App() {
                   </Suspense>
                 }
               />
-              <Route
-                path={ROUTES.analysis}
-                element={
-                  <Suspense fallback={<div className="p-6 text-sm text-muted">Loading page...</div>}>
-                    <AnalysisPage />
-                  </Suspense>
-                }
-              />
-              <Route
-                path={`${ROUTES.analysis}/:videoId`}
-                element={
-                  <Suspense fallback={<div className="p-6 text-sm text-muted">Loading page...</div>}>
-                    <AnalysisPage />
-                  </Suspense>
-                }
-              />
+              <Route path={ROUTES.analysis} element={<AnalysisRoute />} />
+              <Route path={`${ROUTES.analysis}/:videoId`} element={<AnalysisRoute />} />
               <Route
                 path={ROUTES.reports}
-                element={
-                  <Suspense fallback={<div className="p-6 text-sm text-muted">Loading page...</div>}>
-                    <ReportsPage />
-                  </Suspense>
-                }
+                element={<ReportsRoute />}
               />
             </Route>
 

@@ -4,6 +4,7 @@ import type { ImportInspectionResponse } from '../features/import/types'
 import PageHeader from '../components/PageHeader'
 import { IMPORT_RUNTIME_STORAGE_KEY, readImportRuntime } from '../lib/importRuntime'
 import { subscribeLocalStoreUpdates } from '../lib/localStore'
+import { useImportInProgress } from '../hooks/useImportInProgress'
 import { ROUTES } from '../lib/routes'
 import { readUploadDraft, readUploadHistory, UPLOAD_DRAFT_STORAGE_KEY, UPLOAD_HISTORY_STORAGE_KEY } from '../lib/uploadDraft'
 
@@ -11,6 +12,7 @@ export default function DashboardPage() {
   const [lastImport, setLastImport] = useState<ImportInspectionResponse | null>(() => readUploadDraft()?.result ?? null)
   const [history, setHistory] = useState<ImportInspectionResponse[]>(() => readUploadHistory())
   const [liveRuntime, setLiveRuntime] = useState(() => readImportRuntime())
+  const importInProgress = useImportInProgress()
 
   useEffect(() => {
     const syncState = () => {
@@ -237,12 +239,22 @@ export default function DashboardPage() {
             >
               Open Latest Analysis
             </Link>
-            <Link
-              className="rounded-lg border border-border px-3 py-2 text-center text-sm font-medium text-white hover:bg-surface-0"
-              to={ROUTES.reports}
-            >
-              Go to Reports
-            </Link>
+            {importInProgress ? (
+              <span
+                title="Reports are unavailable while a video upload or import is in progress."
+                className="cursor-not-allowed rounded-lg border border-border px-3 py-2 text-center text-sm font-medium text-white opacity-45"
+                aria-disabled="true"
+              >
+                Go to Reports
+              </span>
+            ) : (
+              <Link
+                className="rounded-lg border border-border px-3 py-2 text-center text-sm font-medium text-white hover:bg-surface-0"
+                to={ROUTES.reports}
+              >
+                Go to Reports
+              </Link>
+            )}
           </div>
         </section>
       </div>

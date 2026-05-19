@@ -68,3 +68,157 @@ body {
 .frame-strip-scroll::-webkit-scrollbar-thumb:hover {
   background: #475569;
 }
+
+.report-print-root {
+  position: fixed;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm 14mm;
+  }
+
+  html,
+  body {
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+
+  #root,
+  #root > div,
+  main,
+  main > div {
+    display: block !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  body.printing-report #root {
+    display: none !important;
+  }
+
+  body.printing-report .report-print-root {
+    position: static !important;
+    width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    clip: auto !important;
+    white-space: normal !important;
+    border: none !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+  }
+
+  #report-document,
+  #report-document-print {
+    position: static !important;
+    overflow: visible !important;
+    break-inside: auto;
+    page-break-inside: auto;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  #report-document *,
+  #report-document-print * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  #report-document .report-print-section,
+  #report-document-print .report-print-section {
+    break-inside: auto;
+    page-break-inside: auto;
+    break-after: auto;
+    page-break-after: auto;
+  }
+
+  #report-document .report-print-allow-break,
+  #report-document-print .report-print-allow-break {
+    break-inside: auto;
+    page-break-inside: auto;
+  }
+
+  #report-document .report-hull-schematic,
+  #report-document-print .report-hull-schematic {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  #report-document .report-hull-schematic *,
+  #report-document-print .report-hull-schematic * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  #report-document .report-hull-schematic svg,
+  #report-document-print .report-hull-schematic svg {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  #report-document .report-hull-legend-swatch,
+  #report-document-print .report-hull-legend-swatch {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
+
+  #report-document .report-print-card,
+  #report-document-print .report-print-card {
+    break-inside: avoid-page;
+    page-break-inside: avoid;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
+
+  #report-document img,
+  #report-document-print img {
+    max-width: 100%;
+    height: auto;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  #report-document table,
+  #report-document-print table {
+    break-inside: auto;
+    page-break-inside: auto;
+  }
+
+  #report-document thead,
+  #report-document-print thead {
+    display: table-header-group;
+  }
+
+  #report-document tr,
+  #report-document-print tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}
+
+body.printing-report {
+  overflow: visible !important;
+}
