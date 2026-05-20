@@ -47,7 +47,7 @@ export default function LoginPage() {
           aria-hidden
         />
 
-        <BrandMark className="relative z-10 shrink-0" />
+        <BrandMark size="lg" className="relative z-10 shrink-0" />
 
         <div className="relative z-10 mt-10 max-w-xl space-y-4 sm:mt-12 sm:space-y-5 lg:mt-0 lg:flex-1 lg:justify-center lg:self-start lg:pt-8">
           <h1 className="text-[clamp(1.75rem,4vw+1rem,3.25rem)] font-semibold leading-[1.12] tracking-tight text-white">
