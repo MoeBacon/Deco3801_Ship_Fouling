@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 
+from app.cleanup import cleanup_old_data
 from app.database import init_database
 from app.routers import videos, jobs, frames, auth
 
@@ -13,6 +14,7 @@ from app.routers import videos, jobs, frames, auth
 async def lifespan(app: FastAPI):
     # Runs once when the server starts up
     init_database()
+    cleanup_old_data()
     yield
     # Anything after yield = shutdown --> need to add to this later
 
