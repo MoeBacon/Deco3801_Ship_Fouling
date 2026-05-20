@@ -72,7 +72,7 @@ export default function LoginPage() {
         </div>
       </section>
 
-      <section className="flex w-full flex-1 flex-col justify-center bg-white px-5 py-10 sm:px-8 sm:py-12 lg:h-full lg:min-h-0 lg:w-[26%] lg:shrink-0 lg:px-10 xl:px-12">
+      <section className="flex w-full flex-1 flex-col justify-center bg-white px-5 py-10 sm:px-8 sm:py-12 lg:h-full lg:min-h-0 lg:w-[38%] lg:shrink-0 lg:px-10 xl:px-12">
         <div className="mx-auto w-full max-w-md flex-1 space-y-8 lg:flex lg:max-w-none lg:flex-col lg:justify-center">
           <div className="space-y-2">
             <h2 className="text-2xl font-semibold tracking-tight text-slate-900">
