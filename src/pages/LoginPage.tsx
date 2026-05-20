@@ -1,33 +1,43 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import BrandMark from '../components/BrandMark'
-import { useAuth } from '../features/auth/AuthContext'
-import { ROUTES } from '../lib/routes'
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import BrandMark from "../components/BrandMark";
+import { useAuth } from "../features/auth/AuthContext";
+import { ROUTES } from "../lib/routes";
+import shipHullImg from "../assets/ship-hull.jpg";
+import krovLogoImg from "../assets/krov-logo.png";
 
 export default function LoginPage() {
-  const auth = useAuth()
-  const navigate = useNavigate()
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
-  const [loginError, setLoginError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
+  const auth = useAuth();
+  const navigate = useNavigate();
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    setLoading(true)
-    setLoginError(null)
-    const result = await auth.login(username, password)
-    setLoading(false)
+    event.preventDefault();
+    setLoading(true);
+    setLoginError(null);
+    const result = await auth.login(username, password);
+    setLoading(false);
     if (!result.ok) {
-      setLoginError(result.message)
-      return
+      setLoginError(result.message);
+      return;
     }
-    void navigate(ROUTES.dashboard, { replace: true })
-  }
+    void navigate(ROUTES.dashboard, { replace: true });
+  };
 
   return (
     <div className="flex h-full min-h-0 w-full flex-1 flex-col overflow-y-auto bg-surface-0 lg:flex-row">
-      <section className="relative flex min-h-[min(100dvh,52rem)] flex-1 flex-col justify-between overflow-hidden bg-surface-0 px-5 py-8 sm:px-8 sm:py-10 lg:h-full lg:min-h-0 lg:flex-[1.15] lg:px-12 lg:py-12 xl:px-16">
+      <section
+        className="relative flex min-h-[min(100dvh,52rem)] flex-1 flex-col justify-between overflow-hidden px-5 py-8 sm:px-8 sm:py-10 lg:h-full lg:min-h-0 lg:px-12 lg:py-12 xl:px-16"
+        style={{
+          backgroundImage: `linear-gradient(to right, rgba(11, 18, 32, 1) 0%, rgba(11, 18, 32, 0.9) 20%, rgba(11, 18, 32, 0.4) 50%, rgba(11, 18, 32, 0.1) 70%), url('${shipHullImg}')`,
+          backgroundPosition: "right center",
+          backgroundSize: "cover",
+          backgroundAttachment: "fixed",
+        }}
+      >
         <div
           className="pointer-events-none absolute -right-24 -top-24 size-[min(100vw,28rem)] rounded-full bg-accent/10 blur-3xl"
           aria-hidden
@@ -44,33 +54,46 @@ export default function LoginPage() {
             Protecting hulls. Protecting oceans.
           </h1>
           <p className="max-w-lg text-base leading-relaxed text-muted sm:text-lg">
-            Professional biofouling inspection and compliance reporting for maritime operators
-            worldwide.
+            Professional biofouling inspection and compliance reporting for
+            maritime operators worldwide.
           </p>
         </div>
 
-        <div className="relative z-10 mt-10 grid max-w-lg grid-cols-2 gap-3 sm:mt-12 sm:gap-4 lg:mt-12 lg:mb-0">
-          <div className="rounded-xl border border-white/10 bg-white/5 p-3 backdrop-blur-md sm:p-4">
-            <p className="text-xl font-semibold text-white sm:text-2xl lg:text-3xl">2,400+</p>
-            <p className="mt-1 text-xs text-muted sm:text-sm">Vessels inspected</p>
+        <div className="relative z-10 flex flex-col items-end justify-between gap-6 lg:flex-row lg:items-end">
+          <div className="flex items-center gap-3">
+            <p className="text-xs font-medium tracking-wide text-muted">
+              Partnered with
+            </p>
+            <img src={krovLogoImg} alt="KROV" className="h-auto w-20 sm:w-24" />
           </div>
-          <div className="rounded-xl border border-white/10 bg-white/5 p-3 backdrop-blur-md sm:p-4">
-            <p className="text-xl font-semibold text-white sm:text-2xl lg:text-3xl">98.6%</p>
-            <p className="mt-1 text-xs text-muted sm:text-sm">Compliance rate</p>
-          </div>
+          <p className="text-sm italic font-light text-slate-400 opacity-75 lg:text-right lg:text-base">
+            Solving an old problem with a new approach
+          </p>
         </div>
       </section>
 
-      <section className="flex w-full flex-1 flex-col justify-center bg-white px-5 py-10 sm:px-8 sm:py-12 lg:h-full lg:min-h-0 lg:w-[min(100%,28rem)] lg:shrink-0 lg:px-10 xl:w-[32rem] xl:px-12">
+      <section className="flex w-full flex-1 flex-col justify-center bg-white px-5 py-10 sm:px-8 sm:py-12 lg:h-full lg:min-h-0 lg:w-1/3 lg:shrink-0 lg:px-10 xl:px-12">
         <div className="mx-auto w-full max-w-md flex-1 space-y-8 lg:flex lg:max-w-none lg:flex-col lg:justify-center">
           <div className="space-y-2">
-            <h2 className="text-2xl font-semibold tracking-tight text-slate-900">Welcome back</h2>
-            <p className="text-sm text-slate-600">Sign in to your account to continue</p>
+            <h2 className="text-2xl font-semibold tracking-tight text-slate-900">
+              Welcome back
+            </h2>
+            <p className="text-sm text-slate-600">
+              Sign in to your account to continue
+            </p>
           </div>
 
-          <form className="space-y-5" onSubmit={(e) => { void onSubmit(e) }}>
+          <form
+            className="space-y-5"
+            onSubmit={(e) => {
+              void onSubmit(e);
+            }}
+          >
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700" htmlFor="email">
+              <label
+                className="text-sm font-medium text-slate-700"
+                htmlFor="email"
+              >
                 Email or Username
               </label>
               <input
@@ -87,7 +110,10 @@ export default function LoginPage() {
 
             <div className="space-y-2">
               <div className="flex items-center justify-between gap-2">
-                <label className="text-sm font-medium text-slate-700" htmlFor="password">
+                <label
+                  className="text-sm font-medium text-slate-700"
+                  htmlFor="password"
+                >
                   Password
                 </label>
                 <a
@@ -110,7 +136,9 @@ export default function LoginPage() {
               />
             </div>
 
-            {loginError ? <p className="text-sm text-red-600">{loginError}</p> : null}
+            {loginError ? (
+              <p className="text-sm text-red-600">{loginError}</p>
+            ) : null}
 
             <label className="flex items-center gap-2 text-sm text-slate-700">
               <input
@@ -125,12 +153,12 @@ export default function LoginPage() {
               disabled={loading}
               className="flex w-full items-center justify-center rounded-lg bg-accent px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-accent-hover disabled:opacity-60"
             >
-              {loading ? 'Signing in…' : 'Sign In'}
+              {loading ? "Signing in…" : "Sign In"}
             </button>
           </form>
 
           <p className="text-center text-sm text-slate-600">
-            Don&apos;t have an account?{' '}
+            Don&apos;t have an account?{" "}
             <a
               href="#access"
               className="font-semibold text-accent hover:text-accent-hover"
@@ -141,12 +169,20 @@ export default function LoginPage() {
           </p>
 
           <p className="text-center text-xs leading-relaxed text-slate-500">
-            By signing in you agree to our{' '}
-            <a href="#terms" className="underline-offset-2 hover:underline" onClick={(e) => e.preventDefault()}>
+            By signing in you agree to our{" "}
+            <a
+              href="#terms"
+              className="underline-offset-2 hover:underline"
+              onClick={(e) => e.preventDefault()}
+            >
               Terms of Service
-            </a>{' '}
-            and{' '}
-            <a href="#privacy" className="underline-offset-2 hover:underline" onClick={(e) => e.preventDefault()}>
+            </a>{" "}
+            and{" "}
+            <a
+              href="#privacy"
+              className="underline-offset-2 hover:underline"
+              onClick={(e) => e.preventDefault()}
+            >
               Privacy Policy
             </a>
             .
@@ -154,5 +190,5 @@ export default function LoginPage() {
         </div>
       </section>
     </div>
-  )
+  );
 }
