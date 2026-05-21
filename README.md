@@ -106,8 +106,8 @@ pip install -r requirements.txt
 #### 2.5 Start the Backend Server
 
 ```bash
-python3 -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
-# should this say python instead of python3 (i think so)
+python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+
 ```
 
 Leave this terminal running.
@@ -128,13 +128,19 @@ cd Deco3801_Ship_Fouling
 npm install
 ```
 
-#### 3.2 Start the Frontend
+#### 3.2 Audit Fix
+
+```bash
+npm audit fix
+```
+
+#### 3.3 Start the Frontend
 
 ```bash
 npm run dev
 ```
 
-#### 3.3 Open the App
+#### 3.4 Open the App
 
 Open the local URL printed in the terminal output, for example:
 
@@ -146,9 +152,9 @@ http://localhost:5173/
 
 ## Login Credentials
 
-| Field    | Value   |
-| -------- | ------- |
-| Username | `admin` |
+| Field    | Value          |
+| -------- | -------------- |
+| Username | `admin`        |
 | Password | `inspector123` |
 
 ---

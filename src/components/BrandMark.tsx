@@ -1,10 +1,12 @@
 type BrandMarkProps = {
   /** `dark`: light text for navy sidebars / hero. `light`: dark text on white panels. */
-  variant?: 'light' | 'dark'
+  variant?: "light" | "dark";
   /** Tighter mark for the mobile top bar. */
-  compact?: boolean
-  className?: string
-}
+  compact?: boolean;
+  /** Larger hero size for prominent branding. */
+  size?: "md" | "lg";
+  className?: string;
+};
 
 /** Anchor mark (rounded blue tile + wordmark) — matches supplied Hull Fouling Inspector header art. */
 function LogoAnchor({ className }: { className?: string }) {
@@ -23,32 +25,48 @@ function LogoAnchor({ className }: { className?: string }) {
       <path d="M12 8v14" />
       <path d="M5 12H2a10 10 0 0 0 20 0h-3" />
     </svg>
-  )
+  );
 }
 
-export default function BrandMark({ variant = 'dark', compact = false, className = '' }: BrandMarkProps) {
-  const textClass = variant === 'dark' ? 'text-white' : 'text-slate-900'
+export default function BrandMark({
+  variant = "dark",
+  compact = false,
+  size = "md",
+  className = "",
+}: BrandMarkProps) {
+  const textClass = variant === "dark" ? "text-white" : "text-slate-900";
   const iconTile =
-    variant === 'dark'
-      ? 'bg-accent text-white shadow-sm shadow-accent/35'
-      : 'bg-accent text-white shadow-sm shadow-accent/25'
+    variant === "dark"
+      ? "bg-accent text-white shadow-sm shadow-accent/35"
+      : "bg-accent text-white shadow-sm shadow-accent/25";
+  const iconSize = compact
+    ? "size-9 sm:size-10"
+    : size === "lg"
+      ? "size-12 sm:size-14"
+      : "size-10 sm:size-11";
+  const logoSize = compact
+    ? "size-[1.35rem]"
+    : size === "lg"
+      ? "size-7 sm:size-8"
+      : "size-6";
+  const textSize = compact
+    ? "truncate text-sm sm:text-base"
+    : size === "lg"
+      ? "text-2xl sm:text-3xl"
+      : "text-base sm:text-lg";
 
   return (
     <div className={`flex min-w-0 items-center gap-2.5 sm:gap-3 ${className}`}>
       <div
-        className={`flex shrink-0 items-center justify-center rounded-xl ${iconTile} ${
-          compact ? 'size-9 sm:size-10' : 'size-10 sm:size-11'
-        }`}
+        className={`flex shrink-0 items-center justify-center rounded-xl ${iconTile} ${iconSize}`}
       >
-        <LogoAnchor className={compact ? 'size-[1.35rem]' : 'size-6'} />
+        <LogoAnchor className={logoSize} />
       </div>
       <span
-        className={`min-w-0 font-bold leading-none tracking-tight ${textClass} ${
-          compact ? 'truncate text-sm sm:text-base' : 'text-base sm:text-lg'
-        }`}
+        className={`min-w-0 font-bold leading-none tracking-tight ${textClass} ${textSize}`}
       >
         Hull Fouling Inspector
       </span>
     </div>
-  )
+  );
 }

@@ -1,6 +1,7 @@
 import type { SVGProps } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../features/auth/AuthContext'
+import { useImportInProgress } from '../hooks/useImportInProgress'
 import { ROUTES } from '../lib/routes'
 import BrandMark from './BrandMark'
 
@@ -68,9 +69,17 @@ const navItems = [
   { to: ROUTES.reports, label: 'Reports', Icon: IconReport },
 ] as const
 
+const navDisabledDuringImport: Partial<Record<(typeof navItems)[number]['to'], string>> = {
+  [ROUTES.analysis]:
+    'AI Analysis is unavailable while a video upload or import is in progress.',
+  [ROUTES.reports]:
+    'Reports are unavailable while a video upload or import is in progress.',
+}
+
 export default function Sidebar({ onNavigate }: SidebarProps) {
   const auth = useAuth()
   const navigate = useNavigate()
+  const importInProgress = useImportInProgress()
 
   const onLogout = () => {
     auth.logout()
@@ -88,19 +97,38 @@ export default function Sidebar({ onNavigate }: SidebarProps) {
       </div>
 
       <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-3" aria-label="Primary">
-        {navItems.map(({ to, label, Icon }) => (
-          <NavLink
-            key={to}
-            to={to}
-            onClick={onNavigate}
-            className={({ isActive }) =>
-              `${linkBase} ${isActive ? linkActive : 'border-l-2 border-transparent pl-[10px]'}`
-            }
-          >
-            <Icon className="size-5 shrink-0 text-current opacity-90" />
-            <span>{label}</span>
-          </NavLink>
-        ))}
+        {navItems.map(({ to, label, Icon }) => {
+          const disabledHint = navDisabledDuringImport[to]
+          const disabled = Boolean(disabledHint) && importInProgress
+
+          if (disabled) {
+            return (
+              <span
+                key={to}
+                title={disabledHint}
+                aria-disabled="true"
+                className={`${linkBase} cursor-not-allowed border-l-2 border-transparent pl-[10px] opacity-45`}
+              >
+                <Icon className="size-5 shrink-0 text-current opacity-90" />
+                <span>{label}</span>
+              </span>
+            )
+          }
+
+          return (
+            <NavLink
+              key={to}
+              to={to}
+              onClick={onNavigate}
+              className={({ isActive }) =>
+                `${linkBase} ${isActive ? linkActive : 'border-l-2 border-transparent pl-[10px]'}`
+              }
+            >
+              <Icon className="size-5 shrink-0 text-current opacity-90" />
+              <span>{label}</span>
+            </NavLink>
+          )
+        })}
 
         <div className="mt-auto border-t border-border pt-3">
           <button

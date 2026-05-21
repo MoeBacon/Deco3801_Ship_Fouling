@@ -1,12 +1,12 @@
-import { useState } from 'react'
-import { Outlet } from 'react-router-dom'
-import BrandMark from './BrandMark'
-import Sidebar from './Sidebar'
+import { useState } from "react";
+import { Outlet } from "react-router-dom";
+import BrandMark from "./BrandMark";
+import Sidebar from "./Sidebar";
 
 export default function MainLayout() {
-  const [mobileNavOpen, setMobileNavOpen] = useState(false)
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
-  const closeMobileNav = () => setMobileNavOpen(false)
+  const closeMobileNav = () => setMobileNavOpen(false);
 
   return (
     <div className="flex h-dvh min-h-0 w-full flex-1 flex-col overflow-hidden bg-surface-0 text-slate-100 md:flex-row">
@@ -21,7 +21,7 @@ export default function MainLayout() {
 
       <div
         className={`fixed inset-y-0 left-0 z-50 w-[min(18rem,100%)] max-w-full transform transition-transform duration-200 ease-out md:static md:z-0 md:flex md:h-full md:shrink-0 md:translate-x-0 ${
-          mobileNavOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+          mobileNavOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         }`}
       >
         <Sidebar onNavigate={closeMobileNav} />
@@ -32,7 +32,7 @@ export default function MainLayout() {
           <BrandMark variant="dark" compact className="min-w-0 flex-1" />
           <button
             type="button"
-            className="inline-flex shrink-0 items-center justify-center rounded-lg border border-border bg-surface-1 px-3 py-2 text-sm font-medium text-white hover:bg-surface-2"
+            className="inline-flex shrink-0 items-center justify-center rounded-lg border border-input-border bg-input-bg px-3 py-2 text-sm font-medium text-input-text hover:bg-surface-2 transition-colors"
             aria-expanded={mobileNavOpen}
             aria-controls="primary-navigation"
             onClick={() => setMobileNavOpen((o) => !o)}
@@ -48,5 +48,5 @@ export default function MainLayout() {
         </main>
       </div>
     </div>
-  )
+  );
 }

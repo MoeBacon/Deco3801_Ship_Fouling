@@ -2,7 +2,9 @@ import type { JobStatus, JobStatusResponse } from '../features/import/types'
 import { readVersionedLocal, removeVersionedLocal, writeVersionedLocal } from './localStore'
 
 export const IMPORT_RUNTIME_STORAGE_KEY = 'upload-import-runtime-v1'
+export const IMPORT_SESSION_BUSY_KEY = 'upload-import-session-busy-v1'
 const IMPORT_RUNTIME_VERSION = 1
+const IMPORT_SESSION_BUSY_VERSION = 1
 const IMPORT_RUNTIME_TTL_MS = 1000 * 60 * 60 * 6
 
 export type ImportRuntimeState = {
@@ -60,4 +62,27 @@ export function writeImportRuntime(
 
 export function clearImportRuntime(): void {
   removeVersionedLocal(IMPORT_RUNTIME_STORAGE_KEY)
+  setImportSessionBusy(false)
+}
+
+export function setImportSessionBusy(busy: boolean): void {
+  if (busy) {
+    writeVersionedLocal(IMPORT_SESSION_BUSY_KEY, IMPORT_SESSION_BUSY_VERSION, { busy: true })
+  } else {
+    removeVersionedLocal(IMPORT_SESSION_BUSY_KEY)
+  }
+}
+
+function readImportSessionBusy(): boolean {
+  const parsed = readVersionedLocal<{ busy?: boolean }>(
+    IMPORT_SESSION_BUSY_KEY,
+    IMPORT_SESSION_BUSY_VERSION,
+  )
+  return parsed?.busy === true
+}
+
+export function isImportInProgress(): boolean {
+  if (readImportSessionBusy()) return true
+  const runtime = readImportRuntime()
+  return runtime?.status === 'queued' || runtime?.status === 'processing'
 }
