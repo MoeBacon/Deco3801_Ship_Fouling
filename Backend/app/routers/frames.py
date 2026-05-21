@@ -1,3 +1,4 @@
+import os
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.database import get_connection
@@ -6,20 +7,20 @@ from app.schemas import DetectionResponse, FrameResponse
 
 router = APIRouter()
 
-
 def to_static_url(file_path: str) -> str:
     # Normalize separators so paths from Windows and Unix are handled the same way.
     normalized = file_path.replace("\\", "/").lstrip("/")
-
-    if normalized.startswith("static/"):
-        return "/" + normalized
-
+    
     if normalized.startswith("frames/"):
-        return "/static/" + normalized[len("frames/") :]
+        relative = "/static/" + normalized[len("frames/"):]
+    elif normalized.startswith("static/"):
+        relative = "/" + normalized
+    else:
+        relative = "/static/" + normalized
 
-    # Fallback for unexpected stored values.
-    return "/static/" + normalized
-
+    # In production, prefix with the backend base URL
+    base_url = os.getenv("BACKEND_BASE_URL", "")
+    return base_url + relative
 
 @router.get("/videos/{video_id}/frames", response_model=list[FrameResponse])
 def get_frames(video_id: str, _user: str = Depends(get_current_user)):
