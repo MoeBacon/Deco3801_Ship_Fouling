@@ -974,19 +974,6 @@ export default function AnalysisPage() {
             ) : null}
           </div>
         </article>
-
-        <article className="flex min-w-0 flex-col rounded-xl border border-border bg-surface-1 p-6 xl:col-span-2">
-          <h2 className="text-base font-semibold text-white">
-            Hull mapping & localisation
-          </h2>
-          <p className="mt-1 text-sm text-muted">
-            2D hull schematic with clickable markers → seek to frame
-            (placeholder).
-          </p>
-          <div className="mt-4 flex min-h-[min(16rem,35vh)] flex-1 items-center justify-center rounded-lg border border-dashed border-input-border bg-input-bg/60 text-sm text-placeholder sm:min-h-[min(18rem,40vh)]">
-            Hull diagram canvas
-          </div>
-        </article>
       </div>
     </div>
   );
