@@ -12,6 +12,15 @@ from app.services.frame_extractor import extract_frames, extract_single_image
 router = APIRouter()
 
 
+def _delete_file_if_exists(path: str) -> None:
+    try:
+        os.remove(path)
+    except FileNotFoundError:
+        pass
+    except OSError as exc:
+        print(f"Warning: failed to delete raw upload {path}: {exc}")
+
+
 def process_video(video_id: str, video_path: str):
     connection = get_connection()
     cursor = connection.cursor()
@@ -70,6 +79,7 @@ def process_video(video_id: str, video_path: str):
 
     finally:
         connection.close()
+        _delete_file_if_exists(video_path)
 
 
 @router.post("/videos", response_model=VideoUploadResponse)
@@ -78,15 +88,26 @@ async def upload_video(
     file: UploadFile = File(...),
     _user: str = Depends(get_current_user),
 ):
+    extension = os.path.splitext(file.filename or "")[1].lower()
+    if extension not in _ALLOWED_VIDEO_EXTENSIONS:
+        raise HTTPException(status_code=400, detail="File must be MP4, AVI, MOV, MKV, or WebM.")
+
     os.makedirs("uploads", exist_ok=True)
 
     video_id = str(uuid.uuid4())
-    file_extension = os.path.splitext(file.filename)[1]
-    save_path = os.path.join("uploads", f"{video_id}{file_extension}")
+    save_path = os.path.join("uploads", f"{video_id}{extension}")
 
-    with open(save_path, "wb") as f:
-        while chunk := await file.read(1024 * 1024):
-            f.write(chunk)
+    total = 0
+    try:
+        with open(save_path, "wb") as f:
+            while chunk := await file.read(1024 * 1024):
+                total += len(chunk)
+                if total > _MAX_UPLOAD_BYTES:
+                    raise HTTPException(status_code=413, detail="File exceeds 5 GB limit.")
+                f.write(chunk)
+    except HTTPException:
+        _delete_file_if_exists(save_path)
+        raise
 
     connection = get_connection()
     cursor = connection.cursor()
@@ -102,7 +123,9 @@ async def upload_video(
     return VideoUploadResponse(video_id=video_id, status="queued")
 
 
-_ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png"}
+_ALLOWED_VIDEO_EXTENSIONS = {".mp4", ".avi", ".mov", ".mkv", ".webm"}
+_ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
+_MAX_UPLOAD_BYTES = 5 * 1024 * 1024 * 1024  # 5 GB
 
 
 def process_image(video_id: str, image_path: str):
@@ -160,6 +183,7 @@ def process_image(video_id: str, image_path: str):
 
     finally:
         connection.close()
+        _delete_file_if_exists(image_path)
 
 
 @router.post("/images", response_model=VideoUploadResponse)
@@ -170,16 +194,24 @@ async def upload_image(
 ):
     extension = os.path.splitext(file.filename or "")[1].lower()
     if extension not in _ALLOWED_IMAGE_EXTENSIONS:
-        raise HTTPException(status_code=400, detail="File must be a JPG or PNG image.")
+        raise HTTPException(status_code=400, detail="File must be a JPG, PNG, or WebP image.")
 
     os.makedirs("uploads", exist_ok=True)
 
     video_id = str(uuid.uuid4())
     save_path = os.path.join("uploads", f"{video_id}{extension}")
 
-    with open(save_path, "wb") as f:
-        while chunk := await file.read(1024 * 1024):
-            f.write(chunk)
+    total = 0
+    try:
+        with open(save_path, "wb") as f:
+            while chunk := await file.read(1024 * 1024):
+                total += len(chunk)
+                if total > _MAX_UPLOAD_BYTES:
+                    raise HTTPException(status_code=413, detail="File exceeds 5 GB limit.")
+                f.write(chunk)
+    except HTTPException:
+        _delete_file_if_exists(save_path)
+        raise
 
     connection = get_connection()
     cursor = connection.cursor()
