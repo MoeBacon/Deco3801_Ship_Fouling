@@ -114,7 +114,7 @@ export default function DashboardPage() {
           <p className="mt-1 text-xs text-muted">From local activity</p>
         </article>
         <article className="rounded-xl border border-border bg-surface-1 p-5 shadow-sm">
-          <p className="text-sm font-medium text-muted">Latest status</p>
+          <p className="text-sm font-medium text-muted">Latest Status</p>
           <p className="mt-2 text-3xl font-semibold text-white">
             {latestActivity?.job.status ?? "N/A"}
           </p>
@@ -122,7 +122,7 @@ export default function DashboardPage() {
         </article>
         <article className="rounded-xl border border-border bg-surface-1 p-5 shadow-sm">
           <p className="text-sm font-medium text-muted">
-            Footage duration (total)
+            Footage Duration (Total)
           </p>
           <p className="mt-2 text-3xl font-semibold text-white">
             {footageHours ? `${footageHours}h` : "N/A"}
@@ -131,7 +131,7 @@ export default function DashboardPage() {
         </article>
         <article className="rounded-xl border border-border bg-surface-1 p-5 shadow-sm">
           <p className="text-sm font-medium text-muted">
-            Frames extracted (total)
+            Frames Extracted (Total)
           </p>
           <p className="mt-2 text-3xl font-semibold text-white">
             {totalFramesExtracted || "0"}
@@ -142,7 +142,7 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:items-start">
         <section className="flex min-w-0 flex-col rounded-xl border border-border bg-surface-1 p-6 lg:col-span-2">
-          <h2 className="text-lg font-semibold text-white">Recent activity</h2>
+          <h2 className="text-lg font-semibold text-white">Recent Activity</h2>
           {hasActiveImport ? (
             <div className="mt-4 rounded-lg border border-accent/40 bg-accent/10 p-4">
               <p className="text-xs uppercase tracking-wide text-accent">
@@ -172,7 +172,7 @@ export default function DashboardPage() {
           {latestActivity ? (
             <div className="mt-4 rounded-lg border border-border bg-surface-0/60 p-4">
               <p className="text-xs uppercase tracking-wide text-muted">
-                Latest local upload
+                Latest Local Upload
               </p>
               <p className="mt-2 text-sm text-white">
                 Vessel: <span className="font-medium">{vesselName}</span>
@@ -227,7 +227,7 @@ export default function DashboardPage() {
           {history.length > 1 ? (
             <div className="mt-4 rounded-lg border border-border bg-surface-0/40 p-4">
               <p className="text-xs uppercase tracking-wide text-muted">
-                Previous analyses
+                Previous Analyses
               </p>
               <div className="mt-3 space-y-2">
                 {history.slice(1, 6).map((entry) => (
@@ -259,7 +259,7 @@ export default function DashboardPage() {
         </section>
 
         <section className="flex flex-col rounded-xl border border-border bg-surface-1 p-6">
-          <h2 className="text-lg font-semibold text-white">Quick insights</h2>
+          <h2 className="text-lg font-semibold text-white">Quick Insights</h2>
           <p className="mt-2 text-sm text-muted">
             At-a-glance context and fast actions for your latest run.
           </p>
@@ -267,7 +267,7 @@ export default function DashboardPage() {
           <div className="mt-5 space-y-3 text-sm">
             <div className="rounded-lg border border-input-border bg-input-bg p-3">
               <p className="text-xs uppercase tracking-widest text-label-text">
-                Current state
+                Current State
               </p>
               <p className="mt-1 text-input-text">
                 {hasActiveImport
@@ -280,7 +280,7 @@ export default function DashboardPage() {
 
             <div className="rounded-lg border border-input-border bg-input-bg p-3">
               <p className="text-xs uppercase tracking-widest text-label-text">
-                Latest vessel
+                Latest Vessel
               </p>
               <p className="mt-1 text-input-text">{vesselName}</p>
               <p className="mt-1 text-xs text-placeholder">{inspectionDate}</p>
@@ -288,7 +288,7 @@ export default function DashboardPage() {
 
             <div className="rounded-lg border border-input-border bg-input-bg p-3">
               <p className="text-xs uppercase tracking-widest text-label-text">
-                Frames extracted
+                Frames Extracted
               </p>
               <p className="mt-1 text-input-text">{latestFrames || 0}</p>
             </div>
