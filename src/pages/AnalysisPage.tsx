@@ -16,6 +16,32 @@ import { saveReport, type ReportData } from "../lib/reportStorage";
 import { ROUTES } from "../lib/routes";
 import { formatTimestamp } from "../lib/time";
 
+const ML_CLASS_LEGEND = [
+  { key: "algae", label: "Algae", color: "#00ff00" },
+  { key: "barnacle", label: "Barnacle", color: "#ffffff" },
+  { key: "rust", label: "Rust", color: "#ffff00" },
+  { key: "shell build", label: "Shell Build-up", color: "#ff00ff" },
+] as const;
+const ML_DEFAULT_COLOR = "#00ffff";
+const TIMELINE_NO_DETECTION_COLOR = "#1d5fdb";
+
+function getMlClassColor(classLabel: string): string {
+  const label = classLabel.toLowerCase();
+  for (const { key, color } of ML_CLASS_LEGEND) {
+    if (label.includes(key)) return color;
+  }
+  return ML_DEFAULT_COLOR;
+}
+
+function getMlDisplayName(classLabel: string): string {
+  const label = classLabel.toLowerCase();
+  if (label.includes("algae")) return "Algae";
+  if (label.includes("barnacle")) return "Barnacle";
+  if (label.includes("shell build")) return "Shell Build-up";
+  if (label.includes("rust")) return "Rust";
+  return classLabel;
+}
+
 export default function AnalysisPage() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -245,9 +271,11 @@ export default function AnalysisPage() {
         (frameDetections ?? []).every(
           (detection) => detection.class_label.trim().toLowerCase() === "bad",
         );
-      const dominantLabel =
+      const dominantRaw =
         [...byLabel.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ??
         (status === "none" ? "No detections" : "Not loaded");
+      const dominantLabel =
+        status === "detected" ? getMlDisplayName(dominantRaw) : dominantRaw;
 
       return {
         frame,
@@ -700,21 +728,29 @@ export default function AnalysisPage() {
               </p>
             </div>
 
-            <div className="mt-4 flex items-center gap-4 text-xs text-muted">
+            <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-muted">
+              {ML_CLASS_LEGEND.map(({ label, color }) => (
+                <span key={label} className="inline-flex items-center gap-2">
+                  <span
+                    className="size-2.5 shrink-0 rounded-full border border-input-border"
+                    style={{ backgroundColor: color }}
+                  />
+                  {label}
+                </span>
+              ))}
               <span className="inline-flex items-center gap-2">
-                <span className="size-2.5 rounded-full bg-accent" />
-                Has non-bad detections
+                <span
+                  className="size-2.5 shrink-0 rounded-full"
+                  style={{ backgroundColor: ML_DEFAULT_COLOR }}
+                />
+                Unrecognised class
               </span>
               <span className="inline-flex items-center gap-2">
-                <span className="size-2.5 rounded-full bg-status-sev" />
-                Bad only
-              </span>
-              <span className="inline-flex items-center gap-2">
-                <span className="size-2.5 rounded-full bg-status-mod" />
+                <span className="size-2.5 shrink-0 rounded-full bg-accent-hover" />
                 No detections
               </span>
               <span className="inline-flex items-center gap-2">
-                <span className="size-2.5 rounded-full bg-border" />
+                <span className="size-2.5 shrink-0 rounded-full bg-[#334155]" />
                 Not loaded yet
               </span>
             </div>
@@ -791,11 +827,9 @@ export default function AnalysisPage() {
                 {timelineGeometry.map(({ x, y, item }) => {
                   const fill =
                     item.status === "detected"
-                      ? item.badOnly
-                        ? "#ef4444"
-                        : "#2b6fe6"
+                      ? getMlClassColor(item.dominantLabel)
                       : item.status === "none"
-                        ? "#f59e0b"
+                        ? TIMELINE_NO_DETECTION_COLOR
                         : "#334155";
                   const isActive = item.frame.frame_id === activeFrameId;
                   return (
