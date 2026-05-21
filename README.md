@@ -126,27 +126,24 @@ http://localhost:5173/
 
 ## Available Scripts (Frontend)
 
-| Command           | Description                  |
-| ----------------- | ---------------------------- |
-| `npm run dev`     | Start development server     |
-| `npm run build`   | Build for production         |
-| `npm run preview` | Preview the production build |
-| `npm run test`    | Run unit tests               |
-| `npm run lint`    | Run ESLint                   |
+| Command        | Description              |
+| -------------- | ------------------------ |
+| `npm run dev`  | Start development server |
+| `npm run test` | Run unit tests           |
 
 ---
 
 ## Ideal Use Case
 
 1. Log in using the credentials in this README. You are now on the Dashboard page
-2. Click **Upload Footage** from the dashboard or side navigation.
+2. Click Upload Footage from the dashboard or side navigation.
 3. Fill out Vessel details - required field
-4. Select a video file and click **Upload Video & Queue Job** to start the process.
-5. Wait for the import to complete (view status job), then click **Run Analysis**.
+4. Select a video file and click Upload Video & Queue Job to start the process.
+5. Wait for the import to complete (view status job), then click Run Analysis.
 6. View Analysis & Results, seeing the extracted frames.
 7. Use the detection timeline to hover over a specificdot and view details further or fully click to jump to frame.
 8. Inspect the detection list on the right for class types and the amount.
-9. Click **Export CSV** to download analysis results as a CSV file.
-10. Click **Generate report** to navigate to the Reports page.
+9. Click Export CSV to download analysis results as a CSV file.
+10. Click Generate report to navigate to the Reports page.
 11. Scroll to view full report.
-12. Click **Download PDF** to open a Window Print view, or alternatively click **Back to Analysis** to return to the Analysis Page.
+12. Click Download PDF to open a Window Print view, or alternatively click Back to Analysis to return to the Analysis Page.
