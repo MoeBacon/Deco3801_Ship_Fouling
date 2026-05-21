@@ -12,46 +12,11 @@ A web application for detecting and reporting ship hull fouling using computer v
   ```
   winget install OpenJS.Node.JS
   ```
-- [Git](https://git-scm.com/)
+- [GitHub](https://github.com/)
 
 ---
 
-## Project Structure
-
-```
-Deco3801_Ship_Fouling/          ← repo root (also the frontend)
-├── Backend/
-│   ├── app/
-│   │   ├── routers/
-│   │   │   ├── frames.py
-│   │   │   ├── jobs.py
-│   │   │   └── videos.py
-│   │   ├── services/
-│   │   │   ├── frame_extractor.py
-│   │   │   ├── ml_stub.py
-│   │   │   └── preprocessing.py
-│   │   ├── database.py
-│   │   ├── main.py
-│   │   └── schemas.py
-│   ├── requirements.txt
-│   └── .env                    ← create this (not in git)
-├── src/
-│   ├── components/
-│   ├── features/
-│   │   ├── analysis/
-│   │   ├── auth/
-│   │   └── import/
-│   ├── lib/
-│   ├── pages/
-│   └── main.tsx
-├── public/
-├── package.json
-└── README.md
-```
-
----
-
-## Setup Instructions
+### Setup Instructions
 
 ### Step 1 — Clone the Repository
 
@@ -168,3 +133,7 @@ http://localhost:5173/
 | `npm run preview` | Preview the production build |
 | `npm run test`    | Run unit tests               |
 | `npm run lint`    | Run ESLint                   |
+
+#### Ideal Use Case
+
+## Login with Credentials
