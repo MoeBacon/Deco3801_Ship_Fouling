@@ -1,14 +1,10 @@
 type BrandMarkProps = {
-  /** `dark`: light text for navy sidebars / hero. `light`: dark text on white panels. */
   variant?: "light" | "dark";
-  /** Tighter mark for the mobile top bar. */
   compact?: boolean;
-  /** Larger hero size for prominent branding. */
   size?: "md" | "lg";
   className?: string;
 };
 
-/** Anchor mark (rounded blue tile + wordmark) — matches supplied Hull Fouling Inspector header art. */
 function LogoAnchor({ className }: { className?: string }) {
   return (
     <svg
