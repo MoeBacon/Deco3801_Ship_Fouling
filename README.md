@@ -16,7 +16,27 @@ A web application for detecting and reporting ship hull fouling using computer v
 
 ---
 
-### Setup Instructions
+## Quick Start
+
+### macOS
+1. Download `start.command` from this repository
+2. Open Terminal and run:
+```bash
+   chmod +x start.command
+```
+3. Double-click `start.command` in Finder
+4. Wait for the browser to open automatically at `http://localhost:5173`
+
+### Windows
+1. Download `start.bat` from this repository
+2. Double-click `start.bat`
+3. If dependencies are installed for the first time, close and re-run `start.bat`
+4. Wait for the browser to open automatically at `http://localhost:5173`
+
+> **Note:** First run will take a few minutes to install dependencies. Subsequent runs will be faster.
+---
+
+### Manual Setup Instructions
 
 ### Step 1 — Clone the Repository
 
