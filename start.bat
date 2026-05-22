@@ -60,7 +60,7 @@ ROBOFLOW_MODEL_ID=hull-updated/2
     }
     
     Write-Host '>>> Starting backend.'
-    $backend = Start-Process python -ArgumentList '-m uvicorn app.main:app --host 127.0.0.1 --port 8000' -PassThru -WindowStyle Hidden
+    $backend = Start-Process python -ArgumentList '-m uvicorn app.main:app --host 127.0.0.1 --port 8000' -PassThru -WindowStyle Normal
     
     Write-Host '>>> Waiting for backend to start.'
     for ($i = 0; $i -lt 20; $i++) {
@@ -82,7 +82,7 @@ ROBOFLOW_MODEL_ID=hull-updated/2
     }
     
     Write-Host '>>> Starting frontend.'
-    $frontend = Start-Process npm -ArgumentList 'run dev' -PassThru -WindowStyle Hidden
+    $frontend = Start-Process npm -ArgumentList 'run dev' -PassThru -WindowStyle Normal
     Start-Sleep -Seconds 5
     Start-Process 'http://localhost:5173'
     
