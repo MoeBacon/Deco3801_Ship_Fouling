@@ -38,7 +38,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 
 ### Backend ###
 echo ">>> Setting up backend."
-cd Deco3801_Ship_Fouling/Backend
+cd Backend
 
 if [ ! -d "venv" ]; then
   echo ">>> Creating virtual environment."
