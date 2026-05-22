@@ -6,7 +6,7 @@ set -e
 trap 'kill $(jobs -p) 2>/dev/null' exit
 
 # run from the home directory
-cd ~
+cd "$(dirname "$0")"
 
 # detect OS and install dependencies
 if [[ "$OSTYPE" == "darwin"* ]]; then
@@ -35,13 +35,6 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     echo ">>> This executable it for Mac only"
     exit 1
   fi
-
-echo ">>> Cloning repository."
-if [ ! -d "Deco3801_Ship_Fouling" ]; then
-  git clone https://github.com/MoeBacon/Deco3801_Ship_Fouling
-else
-  echo ">>> Repo already exists, skipping clone."
-fi
 
 ### Backend ###
 echo ">>> Setting up backend."

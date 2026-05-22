@@ -1,6 +1,6 @@
 @echo off
 powershell -ExecutionPolicy Bypass -Command "& {
-    Set-Location $HOME
+    Set-Location $PSScriptRoot
     
     Write-Host '>>> Windows detected.'
     
