@@ -23,6 +23,7 @@ A web application for detecting and reporting ship hull fouling using computer v
 2. Open Terminal and run:
 ```bash
    chmod +x start.command
+   xattr -d com.apple.quarantine start.command
 ```
 3. Double-click `start.command` in Finder
 4. Wait for the browser to open automatically at `http://localhost:5173`
